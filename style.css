@@ -6,7 +6,7 @@ body {
   overflow: hidden;
 }
 
-/* HUD */
+/* HUD scanner */
 .hud {
   position: fixed;
   inset: 0;
@@ -14,6 +14,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .scanner {
@@ -22,11 +23,11 @@ body {
   border: 3px solid #00ff9c;
   border-radius: 50%;
   animation: rotate 6s linear infinite;
-  box-shadow: 0 0 20px #00ff9c;
+  box-shadow: 0 0 25px #00ff9c;
 }
 
 @keyframes rotate {
-  from { transform: rotate(0); }
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
@@ -35,26 +36,29 @@ body {
   letter-spacing: 3px;
 }
 
-/* CHAT TOGGLE */
+/* Chat toggle */
 .chat-toggle {
   position: fixed;
   top: 20px;
   right: 20px;
-  font-size: 24px;
+  font-size: 26px;
   cursor: pointer;
+  z-index: 1000;
 }
 
-/* CHAT PANEL */
+/* Chat panel */
 .chat-panel {
   position: fixed;
   top: 0;
   right: -100%;
   width: 100%;
+  max-width: 360px;
   height: 100%;
-  background: black;
-  transition: 0.3s;
+  background: rgba(0,0,0,0.97);
   display: flex;
   flex-direction: column;
+  transition: right 0.3s ease;
+  z-index: 999;
 }
 
 .chat-panel.open {
@@ -63,8 +67,8 @@ body {
 
 .chat-header {
   padding: 15px;
-  border-bottom: 1px solid #00ff9c;
   text-align: center;
+  border-bottom: 1px solid #00ff9c;
 }
 
 .chat-messages {
@@ -88,15 +92,19 @@ body {
 
 .chat-input input {
   flex: 1;
+  padding: 10px;
   background: black;
-  border: 1px solid #00ff9c;
   color: #00ff9c;
-  padding: 8px;
+  border: 1px solid #00ff9c;
+  outline: none;
+  font-size: 14px;
 }
 
 .chat-input button {
   margin-left: 5px;
   background: #00ff9c;
   border: none;
-  padding: 8px;
+  color: black;
+  padding: 10px 14px;
+  cursor: pointer;
 }
