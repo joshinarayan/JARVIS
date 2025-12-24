@@ -7,6 +7,9 @@ const input = document.getElementById("input");
 
 function toggleChat() {
   chatPanel.classList.toggle("open");
+  if(chatPanel.classList.contains("open")) {
+    setTimeout(() => input.focus(), 300); // focus input after sliding in
+  }
 }
 
 function add(role, text) {
@@ -14,50 +17,54 @@ function add(role, text) {
   div.className = `msg ${role}`;
   div.textContent = text;
   messages.appendChild(div);
-  div.scrollIntoView();
+  div.scrollIntoView({behavior: "smooth"});
 }
 
 async function send() {
   const text = input.value.trim();
   if (!text) return;
-
   input.value = "";
+
   add("user", text);
   statusEl.textContent = "THINKING…";
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENROUTER_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are JARVIS, Tony Stark's AI assistant. You always reply intelligently and confidently."
-        },
-        { role: "user", content: text }
-      ]
-    })
-  });
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are JARVIS, Tony Stark's AI assistant. Always reply confidently and clearly."
+          },
+          { role: "user", content: text }
+        ]
+      })
+    });
 
-  const data = await res.json();
-  const reply = data.choices?.[0]?.message?.content || "I am online, sir.";
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || "I am online, sir.";
 
-  add("jarvis", reply);
-  speak(reply);
-  statusEl.textContent = "ONLINE";
+    add("jarvis", reply);
+    speak(reply);
+    statusEl.textContent = "ONLINE";
+
+  } catch (e) {
+    console.error(e);
+    add("jarvis", "Backend error sir. Check your key.");
+    statusEl.textContent = "ERROR";
+  }
 }
 
 function speak(text) {
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 0.95;
   u.pitch = 0.6;
-  u.voice =
-    speechSynthesis.getVoices().find(v => v.name.includes("Google")) ||
-    speechSynthesis.getVoices()[0];
+  u.voice = speechSynthesis.getVoices().find(v=>v.name.includes("Google")) || speechSynthesis.getVoices()[0];
   speechSynthesis.speak(u);
 }
