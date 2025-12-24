@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Jarvis Final HUD</title>
+<title>Jarvis HUD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="style.css">
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00ff9c">
 </head>
 <body>
 
+<!-- HUD -->
 <div class="hud">
   <div class="scanlines"></div>
   <div class="hud-circle"></div>
@@ -25,8 +30,14 @@
 <!-- Main Jarvis UI -->
 <div id="jarvis-ui" class="container hidden">
   <h1>J.A.R.V.I.S</h1>
+  
+  <!-- Dashboard Panels -->
   <div id="dashboard" class="dashboard"></div>
+  
+  <!-- Chat Messages -->
   <div id="chat" class="chat"></div>
+  
+  <!-- Input Box -->
   <div class="input-box">
     <input id="input" placeholder="Talk to Jarvis..." />
     <button onclick="send()">▶</button>
