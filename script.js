@@ -1,36 +1,20 @@
-const input = document.getElementById("input");
+const OPENROUTER_KEY = "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";
+
 const statusEl = document.getElementById("status");
+const chatPanel = document.getElementById("chatPanel");
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
 
-function addMessage(role, text) {
-  const msg = document.createElement("div");
-  msg.className = `msg ${role}`;
-
-  if (text.includes("```")) {
-    msg.innerHTML = text.replace(/```(\w+)?([\s\S]*?)```/g, (_, lang, code) => {
-      return `
-        <pre>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <code class="language-${lang || "javascript"}">${escapeHtml(code)}</code>
-        </pre>
-      `;
-    });
-  } else {
-    msg.textContent = text;
-  }
-
-  document.getElementById("messages").appendChild(msg);
-  Prism.highlightAll();
-  msg.scrollIntoView();
+function toggleChat() {
+  chatPanel.classList.toggle("open");
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-function copyCode(btn) {
-  navigator.clipboard.writeText(btn.nextElementSibling.innerText);
-  btn.innerText = "Copied!";
-  setTimeout(() => btn.innerText = "Copy", 1500);
+function add(role, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  messages.appendChild(div);
+  div.scrollIntoView();
 }
 
 async function send() {
@@ -38,28 +22,42 @@ async function send() {
   if (!text) return;
 
   input.value = "";
-  addMessage("user", text);
-  statusEl.textContent = "Thinking…";
+  add("user", text);
+  statusEl.textContent = "THINKING…";
 
-  const res = await fetch("/api/ask", {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: text })
+    headers: {
+      "Authorization": `Bearer ${OPENROUTER_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are JARVIS, Tony Stark's AI assistant. You always reply intelligently and confidently."
+        },
+        { role: "user", content: text }
+      ]
+    })
   });
 
   const data = await res.json();
-  const reply = data.reply;
+  const reply = data.choices?.[0]?.message?.content || "I am online, sir.";
 
-  addMessage("jarvis", reply);
+  add("jarvis", reply);
   speak(reply);
-  statusEl.textContent = "Listening…";
+  statusEl.textContent = "ONLINE";
 }
 
 function speak(text) {
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.95;
-  utter.pitch = 0.7;
-  utter.voice = speechSynthesis.getVoices().find(v => v.name.includes("Google US English")) 
-               || speechSynthesis.getVoices()[0];
-  speechSynthesis.speak(utter);
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.95;
+  u.pitch = 0.6;
+  u.voice =
+    speechSynthesis.getVoices().find(v => v.name.includes("Google")) ||
+    speechSynthesis.getVoices()[0];
+  speechSynthesis.speak(u);
 }
