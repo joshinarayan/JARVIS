@@ -1,124 +1,126 @@
 * {
   box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
 }
 
 body {
   margin: 0;
   background: black;
   color: #00ff9c;
-  font-family: monospace;
   overflow: hidden;
 }
 
 /* HUD */
 .hud {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 62%;
+  height: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  pointer-events: none;
+  justify-content: center;
 }
 
-.core {
-  width: 90px;
-  height: 90px;
+.ring {
+  width: 180px;
+  height: 180px;
+  border: 3px solid #00ff9c;
   border-radius: 50%;
-  background: radial-gradient(circle, #00ff9c, #003322);
-  box-shadow: 0 0 30px #00ff9c;
-  z-index: 5;
+  animation: spin 6s linear infinite;
 }
 
-.hud-ring {
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status {
   position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(0,255,156,0.4);
-}
-
-.outer { width: 300px; height: 300px; animation: spin 20s linear infinite; }
-.middle { width: 220px; height: 220px; animation: spinReverse 14s linear infinite; }
-.inner { width: 150px; height: 150px; animation: spin 8s linear infinite; }
-
-.radar {
-  position: absolute;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(0,255,156,0.4), transparent 60%);
-  animation: radarSweep 3s linear infinite;
-}
-
-.scanlines {
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0,255,156,0.04),
-    rgba(0,255,156,0.04) 1px,
-    transparent 2px,
-    transparent 4px
-  );
-}
-
-.status-text {
-  position: absolute;
-  bottom: 12%;
+  bottom: 40px;
   letter-spacing: 2px;
-  font-size: 14px;
-  opacity: 0.85;
 }
 
-/* Speaking */
-.hud-speaking .core {
-  animation: pulse 0.5s infinite;
-}
-
-/* Chat UI */
-.chat {
+/* SIDEBAR */
+.sidebar {
   position: fixed;
-  bottom: 10px;
-  width: 100%;
-  padding: 10px;
-  pointer-events: auto;
+  right: 0;
+  top: 0;
+  width: 38%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  border-left: 1px solid #00ff9c;
+  display: flex;
+  flex-direction: column;
 }
 
-#messages {
-  max-height: 120px;
+.sidebar-header {
+  padding: 12px;
+  border-bottom: 1px solid #00ff9c;
+  text-align: center;
+  letter-spacing: 3px;
+}
+
+.messages {
+  flex: 1;
   overflow-y: auto;
-  margin-bottom: 5px;
+  padding: 10px;
+  font-size: 14px;
 }
 
-input {
-  width: 70%;
-  padding: 8px;
+.msg {
+  margin-bottom: 10px;
+  white-space: pre-wrap;
 }
 
-button {
-  width: 25%;
-  padding: 8px;
+.msg.jarvis {
+  color: #00ff9c;
+}
+
+.msg.user {
+  color: #7fffd4;
+}
+
+/* INPUT */
+.input-area {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid #00ff9c;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 10px;
+  background: black;
+  color: #00ff9c;
+  border: 1px solid #00ff9c;
+  outline: none;
+}
+
+.input-area button {
+  margin-left: 6px;
+  background: #00ff9c;
+  color: black;
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+/* CODE */
+pre {
+  position: relative;
+  background: #111;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 12px;
   background: #00ff9c;
   border: none;
-  color: black;
-}
-
-/* Animations */
-@keyframes spin {
-  from { transform: rotate(0); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes spinReverse {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0); }
-}
-
-@keyframes radarSweep {
-  from { transform: rotate(0); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  cursor: pointer;
 }
