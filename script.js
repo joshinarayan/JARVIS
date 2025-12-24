@@ -1,7 +1,7 @@
 // -------------------------
 // CONFIG
 // -------------------------
-const OPENROUTER_KEY = "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";
+const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com"; // Replace with your Render URL
 
 const statusEl = document.getElementById("status");
 const chatPanel = document.getElementById("chatPanel");
@@ -30,7 +30,7 @@ function add(role, text) {
 }
 
 // -------------------------
-// SEND USER MESSAGE TO AI
+// SEND USER MESSAGE TO BACKEND
 // -------------------------
 async function send() {
   const text = input.value.trim();
@@ -41,26 +41,14 @@ async function send() {
   statusEl.textContent = "THINKING…";
 
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetch(`${BACKEND_URL}/api/ask`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are JARVIS, Tony Stark's AI assistant. You always reply confidently, clearly, and like Jarvis."
-          },
-          { role: "user", content: text }
-        ]
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: text })
     });
 
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "I am online, sir.";
+    const reply = data.reply;
 
     add("jarvis", reply);
     speak(reply);
@@ -68,7 +56,7 @@ async function send() {
 
   } catch (e) {
     console.error(e);
-    add("jarvis", "Backend error, sir. Check your API key.");
+    add("jarvis", "Backend error, sir.");
     statusEl.textContent = "ERROR";
   }
 }
@@ -79,9 +67,8 @@ async function send() {
 function speak(text) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 0.95;
-  utter.pitch = 0.5; // low-pitch Jarvis
+  utter.pitch = 0.5; // Jarvis low pitch
 
-  // Wait until voices are loaded
   let voices = speechSynthesis.getVoices();
   if (!voices.length) {
     window.speechSynthesis.onvoiceschanged = () => {
@@ -98,7 +85,6 @@ function speakWithVoice(text, voices) {
   utter.rate = 0.95;
   utter.pitch = 0.5;
 
-  // Prefer Google US English male, then any male, then default
   let jarvisVoice =
     voices.find(v => v.name.includes("Google US English") && /male/i.test(v.name)) ||
     voices.find(v => /male/i.test(v.name)) ||
