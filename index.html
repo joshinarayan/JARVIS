@@ -3,38 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis</title>
-
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Prism -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
+  <title>JARVIS</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- HUD -->
+  <!-- MAIN HUD -->
   <div class="hud">
-    <div class="ring"></div>
-    <div class="status" id="status">Listening…</div>
+    <div class="scanner"></div>
+    <div class="status" id="status">ONLINE</div>
   </div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-header">JARVIS LOG</div>
+  <!-- CHAT SLIDER BUTTON -->
+  <div class="chat-toggle" onclick="toggleChat()">≡</div>
 
-    <div id="messages" class="messages"></div>
+  <!-- CHAT PANEL -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">JARVIS CHAT</div>
+    <div class="chat-messages" id="messages"></div>
 
-    <div class="input-area">
-      <input id="input" placeholder="Ask Jarvis anything…" />
+    <div class="chat-input">
+      <input id="input" placeholder="Type anything…" />
       <button onclick="send()">Send</button>
     </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-html.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-css.min.js"></script>
 
   <script src="script.js"></script>
 </body>
