@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Jarvis Final HUD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="hud">
+  <div class="scanlines"></div>
+  <div class="hud-circle"></div>
+  <div class="hud-arcs"></div>
+</div>
+
+<!-- Login Screen -->
+<div id="login-screen" class="login-screen">
+  <h1>WELCOME TO JARVIS</h1>
+  <input id="username" placeholder="Username" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="login()">ENTER</button>
+</div>
+
+<!-- Main Jarvis UI -->
+<div id="jarvis-ui" class="container hidden">
+  <h1>J.A.R.V.I.S</h1>
+  <div id="dashboard" class="dashboard"></div>
+  <div id="chat" class="chat"></div>
+  <div class="input-box">
+    <input id="input" placeholder="Talk to Jarvis..." />
+    <button onclick="send()">▶</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
