@@ -5,120 +5,188 @@
 
 <style>
 body{
-    background:#000;
-    color:white;
-    margin:0;
-    font-family:Arial;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
+  background:#000;
+  margin:0;
+  font-family:monospace;
+  overflow:hidden;
 }
 
+/* MAIN JARVIS HOME - ONLY SCANNER */
 #scanner{
-    width:180px;height:180px;margin:20px auto;
-    border-radius:50%;border:4px solid #00ff95;
-    animation:pulse 2s infinite;
-    box-shadow:0 0 25px #00ff95;
-}
-@keyframes pulse{
- 0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}
+    width:240px;height:240px;margin:18vh auto;
+    border-radius:50%;
+    border:4px solid #00e6ac;
+    box-shadow:0 0 35px #00e6ac,inset 0 0 30px #00e6ac;
+    position:relative;
 }
 
-#chat-box{
- flex:1;overflow-y:auto;padding:10px;font-size:17px;
+/* rotating inner scan ring */
+#scanner::after{
+  content:"";
+  width:180px;height:180px;
+  border-radius:50%;
+  border:3px solid #00e6ac55;
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  animation:spin 3.5s linear infinite;
 }
-.message{margin-bottom:10px;padding:8px;border-radius:6px;max-width:80%;}
-.user{background:#0066ff44;margin-left:auto;}
-.bot{background:#00ff9544;}
 
-#input-area{
- position:fixed;bottom:0;width:100%;display:flex;background:#111;padding:10px;
+@keyframes spin{
+  from{transform:translate(-50%,-50%) rotate(0);}
+  to{transform:translate(-50%,-50%) rotate(360deg);}
 }
-#user-input{
- flex:1;padding:12px;font-size:18px;background:#222;border:none;color:white;
+
+/* SWIPE PANEL (Chat UI) */
+#drawer{
+  width:85vw;
+  height:100vh;
+  background:#021a1a;
+  position:fixed;
+  top:0;right:-85vw;
+  transition:.6s;
+  border-left:2px solid #00e6ac;
+  backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;
 }
-button{
- padding:12px;background:#00ff95;border:none;color:black;font-weight:bold;font-size:18px;margin-left:6px;
+
+/* swipe handle */
+#openBtn{
+  position:fixed;top:20px;right:20px;
+  background:#00e6ac;border:none;
+  padding:10px 14px;font-size:18px;
+  color:#000;font-weight:bold;cursor:pointer;
+  border-radius:6px;
 }
+
+#messages{
+  flex:1;overflow-y:auto;padding:12px;
+  color:#c2fff3;
+}
+
+/* msg bubbles */
+.msg{padding:10px;margin:8px 0;border-radius:6px;}
+.me{background:#0a4d4d;margin-left:auto;color:#fff;}
+.bot{background:#003333;color:#0ff;position:relative;}
+.copy{
+  position:absolute;right:6px;top:6px;
+  background:none;border:1px solid #00e6ac;
+  color:#00e6ac;font-size:12px;
+  cursor:pointer;border-radius:4px;
+}
+
+/* input bottom */
+#inputBar{
+  display:flex;background:#012;
+  padding:8px;gap:5px;
+}
+#input{
+  flex:1;background:#000;border:1px solid #00e6ac;color:#0ff;
+  padding:10px;font-size:17px;border-radius:5px;
+}
+#send{
+  background:#00e6ac;color:#000;border:none;
+  padding:10px 18px;font-size:17px;border-radius:6px;
+}
+
 </style>
 </head>
 
 <body>
 
 <div id="scanner"></div>
-<div id="chat-box"></div>
+<button id="openBtn">Chat ››</button>
 
-<div id="input-area">
-   <input id="user-input" placeholder="Speak to me sir..."/>
-   <button onclick="sendMessage()">Send</button>
+<!-- CHAT PANEL -->
+<div id="drawer">
+  <div id="messages"></div>
+
+  <div id="inputBar">
+    <input id="input" placeholder="Speak, sir..." autocomplete="off">
+    <button id="send">➤</button>
+  </div>
 </div>
+
 <script>
-let voiceGender="male";
+const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-function speak(text){
-    const msg = new SpeechSynthesisUtterance(text);
-
-    msg.voice = speechSynthesis.getVoices().find(v =>
-        v.name.toLowerCase().includes("male") ||
-        v.name.toLowerCase().includes("david") ||
-        v.name.toLowerCase().includes("john") ||
-        v.name.toLowerCase().includes("english")
-    ) || speechSynthesis.getVoices()[0];
-
-    msg.rate = 1.0;
-    msg.pitch = 0.75;      // deeper voice 🔥 JARVIS vibe
-    msg.volume = 1;
-    speechSynthesis.speak(msg);
+/* Drawer Toggle */
+document.getElementById("openBtn").onclick = ()=>{
+  document.getElementById("drawer").style.right="0";
 }
 
-function addMessage(text,type){
-   const box=document.getElementById("chat-box");
-   const msg=document.createElement("div");
-   msg.className="message "+type;
-   msg.style.wordBreak="break-word";  // 🔥 stays inside bubble
-   msg.innerHTML=text.replace(/([.!?])\s*/g,"$1 "); // auto spacing ✔
-   box.appendChild(msg);
-   box.scrollTop=box.scrollHeight;
-   return msg;
+/* Add Messages */
+function add(text,from){
+  let wrap=document.getElementById("messages");
+  let div=document.createElement("div");
+  div.className="msg "+ (from=="me"?"me":"bot");
+  div.innerHTML=text;
+
+  // copy button for bot msgs
+  if(from!="me"){
+     let b=document.createElement("button");
+     b.className="copy"; b.innerText="copy";
+     b.onclick=()=>navigator.clipboard.writeText(text);
+     div.appendChild(b);
+  }
+
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
 }
 
-async function sendMessage(){
-    const input=document.getElementById("user-input");
-    const text=input.value.trim();
-    if(!text) return;
+/* Speak - Male JARVIS tone */
+function speak(t){
+  const msg=new SpeechSynthesisUtterance("Sir, " + t);
+  let v=speechSynthesis.getVoices()
+       .find(v=>v.name.toLowerCase().includes("male")
+            || v.name.includes("Daniel")
+            || v.name.includes("David")
+            || v.name.includes("English"));
 
-    addMessage(text,"user");
-    const botMsg=addMessage("🔄 Processing sir...","bot");
-    input.value="";
+  msg.voice=v; msg.rate=.9; msg.pitch=.6;
+  speechSynthesis.speak(msg);
+}
 
-    try{
-        const res = await fetch("https://jarvis-backend-lllv.onrender.com/api/ask",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({ message:text })
-        });
+/* Send to backend with Jarvis styling */
+async function send(){
+  let text=document.getElementById("input").value.trim();
+  if(!text) return;
 
-        const data=await res.json();
-        if(!data.reply){
-            botMsg.innerText="❌ No response received sir.";
-            return;
-        }
+  add("You: "+text,"me");
+  document.getElementById("input").value="";
 
-        botMsg.innerHTML="";
-        let i=0, reply=data.reply;
+  let placeholder=add("Jarvis: Processing…","bot");
 
-        let type=setInterval(()=>{
-            botMsg.innerHTML+=reply[i];
-            i++;
-            if(i>=reply.length){
-                clearInterval(type);
-                speak(reply);
-            }
-        },30);
+  try{
+     let q=await fetch(backend,{
+       method:"POST",
+       headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({message:text})
+     });
 
-    }catch{
-        botMsg.innerText="Connection failed sir.";
-    }
+     let res=await q.json();
+     let r=res.reply || "No response sir.";
+
+     placeholder.innerHTML="Jarvis: " + r;
+     speak(r);
+
+  }catch(e){
+     placeholder.innerHTML="Jarvis: Connection lost, sir.";
+  }
+}
+
+document.getElementById("send").onclick=send;
+document.getElementById("input").onkeypress=(e)=>{ if(e.key=="Enter") send(); }
+
+/* Wake-Word Listener Hey Jarvis */
+window.onload=()=>{
+  let SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
+  let r=new SR(); r.continuous=true;
+  r.onresult=e=>{
+     let t=e.results[e.resultIndex][0].transcript.toLowerCase();
+     if(t.includes("hey jarvis")) speak("online and listening");
+  };
+  r.start();
 }
 </script>
 
