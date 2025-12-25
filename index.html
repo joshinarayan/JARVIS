@@ -52,14 +52,22 @@ button{
    <input id="user-input" placeholder="Speak to me sir..."/>
    <button onclick="sendMessage()">Send</button>
 </div>
-
 <script>
 let voiceGender="male";
 
 function speak(text){
-    const msg=new SpeechSynthesisUtterance(text);
-    msg.rate=1.04;
-    msg.pitch=0.85; 
+    const msg = new SpeechSynthesisUtterance(text);
+
+    msg.voice = speechSynthesis.getVoices().find(v =>
+        v.name.toLowerCase().includes("male") ||
+        v.name.toLowerCase().includes("david") ||
+        v.name.toLowerCase().includes("john") ||
+        v.name.toLowerCase().includes("english")
+    ) || speechSynthesis.getVoices()[0];
+
+    msg.rate = 1.0;
+    msg.pitch = 0.75;      // deeper voice 🔥 JARVIS vibe
+    msg.volume = 1;
     speechSynthesis.speak(msg);
 }
 
@@ -67,7 +75,8 @@ function addMessage(text,type){
    const box=document.getElementById("chat-box");
    const msg=document.createElement("div");
    msg.className="message "+type;
-   msg.innerHTML=text;
+   msg.style.wordBreak="break-word";  // 🔥 stays inside bubble
+   msg.innerHTML=text.replace(/([.!?])\s*/g,"$1 "); // auto spacing ✔
    box.appendChild(msg);
    box.scrollTop=box.scrollHeight;
    return msg;
@@ -86,30 +95,28 @@ async function sendMessage(){
         const res = await fetch("https://jarvis-backend-lllv.onrender.com/api/ask",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({ message: text }) // ✔ CORRECT FIELD NAME
+            body:JSON.stringify({ message:text })
         });
 
-        const data = await res.json();
-
+        const data=await res.json();
         if(!data.reply){
-            botMsg.innerText="❌ No response from AI sir (backend received nothing)";
+            botMsg.innerText="❌ No response received sir.";
             return;
         }
 
-        botMsg.innerText="";
-        let i=0;
-        let reply=data.reply;
+        botMsg.innerHTML="";
+        let i=0, reply=data.reply;
 
         let type=setInterval(()=>{
-            botMsg.innerText+=reply[i];
+            botMsg.innerHTML+=reply[i];
             i++;
             if(i>=reply.length){
                 clearInterval(type);
                 speak(reply);
             }
-        },25);
+        },30);
 
-    }catch(err){
+    }catch{
         botMsg.innerText="Connection failed sir.";
     }
 }
