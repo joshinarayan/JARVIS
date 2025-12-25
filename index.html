@@ -58,8 +58,8 @@ let voiceGender="male";
 
 function speak(text){
     const msg=new SpeechSynthesisUtterance(text);
-    msg.rate=1.05;
-    msg.pitch= voiceGender==="male" ? 0.8 : 1.3;
+    msg.rate=1.04;
+    msg.pitch=0.85; // deeper male tone
     speechSynthesis.speak(msg);
 }
 
@@ -67,7 +67,7 @@ function addMessage(text,type){
    const box=document.getElementById("chat-box");
    const msg=document.createElement("div");
    msg.className="message "+type;
-   msg.innerText=text;
+   msg.innerHTML=text;
    box.appendChild(msg);
    box.scrollTop=box.scrollHeight;
    return msg;
@@ -79,21 +79,38 @@ async function sendMessage(){
     if(!text) return;
 
     addMessage(text,"user");
-    const botMsg=addMessage("Processing sir...","bot");
+    const botMsg=addMessage("🔄 Processing sir...","bot");
     input.value="";
 
     try{
-       const res=await fetch("https://jarvis-backend-lllv.onrender.com/api/ask",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:text})
-       });
+        const res = await fetch("https://jarvis-backend-lllv.onrender.com/api/ask",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ prompt: text }) // ← correct field name
+        });
 
-       const data=await res.json();
-       botMsg.innerText=data.reply;
-       speak(data.reply);
-    }catch{
-       botMsg.innerText="Connection failed sir.";
+        const data = await res.json();
+
+        if(!data.reply){
+            botMsg.innerText="Jarvis online but no response received, sir.";
+            return;
+        }
+
+        // TYPEWRITER EFFECT 😏✨
+        botMsg.innerText="";
+        let i=0;
+        let reply=data.reply;
+        let typing=setInterval(()=>{
+            botMsg.innerText+=reply[i];
+            i++;
+            if(i>=reply.length){
+                clearInterval(typing);
+                speak(reply);
+            }
+        },25);
+
+    }catch(err){
+        botMsg.innerText="❌ Connection failed sir.";
     }
 }
 </script>
