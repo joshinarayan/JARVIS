@@ -1,4 +1,4 @@
-const backendURL = "YOUR_RENDER_LINK/api/ask"; // replace with real URL
+const backendURL = "https://jarvis-backend-lllv.onrender.com/api/ask"; // replace with real URL
 
 let startX = 0;
 
