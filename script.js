@@ -1,102 +1,52 @@
-// -------------------------
-// CONFIG
-// -------------------------
-const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com"; // Replace with your Render URL
+const backendURL = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-const statusEl = document.getElementById("status");
-const chatPanel = document.getElementById("chatPanel");
-const messages = document.getElementById("messages");
-const input = document.getElementById("input");
+const chat = document.getElementById("chatPanel");
+document.getElementById("openChat").onclick = ()=> chat.style.right="0";
 
-// -------------------------
-// CHAT PANEL TOGGLE
-// -------------------------
-function toggleChat() {
-  chatPanel.classList.toggle("open");
-  if (chatPanel.classList.contains("open")) {
-    setTimeout(() => input.focus(), 300); // focus after slide in
-  }
-}
+document.getElementById("send").onclick = sendMsg;
+document.getElementById("msg").addEventListener("keypress", e=>{
+    if(e.key==="Enter") sendMsg();
+});
 
-// -------------------------
-// ADD MESSAGE TO PANEL
-// -------------------------
-function add(role, text) {
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.textContent = text;
-  messages.appendChild(div);
-  div.scrollIntoView({ behavior: "smooth" });
-}
+async function sendMsg(){
+    let msg = document.getElementById("msg").value.trim();
+    if(!msg) return;
 
-// -------------------------
-// SEND USER MESSAGE TO BACKEND
-// -------------------------
-async function send() {
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = "";
+    add("You", msg);
+    document.getElementById("msg").value="";
 
-  add("user", text);
-  statusEl.textContent = "THINKING…";
-
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: text })
+    let response = await fetch(backendURL,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({message:msg})
     });
 
-    const data = await res.json();
-    const reply = data.reply;
-
-    add("jarvis", reply);
-    speak(reply);
-    statusEl.textContent = "ONLINE";
-
-  } catch (e) {
-    console.error(e);
-    add("jarvis", "Backend error, sir.");
-    statusEl.textContent = "ERROR";
-  }
+    let data = await response.json();
+    add("Jarvis", data.reply);
+    speak(data.reply);
 }
 
-// -------------------------
-// SPEECH SYNTHESIS (JARVIS VOICE)
-// -------------------------
-function speak(text) {
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.95;
-  utter.pitch = 0.5; // Jarvis low pitch
+/* add chat text */
+function add(who,text){
+    document.getElementById("messages").innerHTML += `<p><b>${who}:</b> ${text}</p>`;
+}
 
-  let voices = speechSynthesis.getVoices();
-  if (!voices.length) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      voices = speechSynthesis.getVoices();
-      speakWithVoice(text, voices);
+/* voice output */
+function speak(text){
+    let j = new SpeechSynthesisUtterance(text);
+    let voices = speechSynthesis.getVoices();
+    j.voice = voices.find(v=>v.name.includes("Male")||v.name.includes("John")||v.name.includes("English")) || voices[0];
+    j.pitch=0.8; j.rate=1; j.volume=1;
+    speechSynthesis.speak(j);
+}
+
+/* Wake word Detection */
+window.addEventListener("click",()=>{ // enables mic permission after first touch
+    const rec = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+    rec.continuous=true;
+    rec.onresult = e=>{
+        let t = e.results[e.resultIndex][0].transcript.toLowerCase();
+        if(t.includes("hey jarvis")) speak("At your service sir.");
     };
-  } else {
-    speakWithVoice(text, voices);
-  }
-}
-
-function speakWithVoice(text, voices) {
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.95;
-  utter.pitch = 0.5;
-
-  let jarvisVoice =
-    voices.find(v => v.name.includes("Google US English") && /male/i.test(v.name)) ||
-    voices.find(v => /male/i.test(v.name)) ||
-    voices[0];
-
-  utter.voice = jarvisVoice;
-  speechSynthesis.speak(utter);
-}
-
-// -------------------------
-// ENTER KEY HANDLER
-// -------------------------
-input.addEventListener("keydown", function (e) {
-  if (e.key === "Enter") send();
+    rec.start();
 });
