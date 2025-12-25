@@ -15,38 +15,46 @@ async function sendMsg(){
     add("You", msg);
     document.getElementById("msg").value="";
 
-    let response = await fetch(backendURL,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({message:msg})
-    });
+    try{
+        let response = await fetch(backendURL,{
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({message:msg})
+        });
 
-    let data = await response.json();
-    add("Jarvis", data.reply);
-    speak(data.reply);
+        let data = await response.json();
+        add("Jarvis", data.reply);
+        speak(data.reply);
+    }catch(err){
+        add("Jarvis","Backend error sir 😭");
+    }
 }
 
 /* add chat text */
 function add(who,text){
-    document.getElementById("messages").innerHTML += `<p><b>${who}:</b> ${text}</p>`;
+    const msgDiv = document.getElementById("messages");
+    msgDiv.innerHTML += `<p><b>${who}:</b> ${text}</p>`;
+    msgDiv.scrollTop = msgDiv.scrollHeight;
 }
 
 /* voice output */
 function speak(text){
     let j = new SpeechSynthesisUtterance(text);
     let voices = speechSynthesis.getVoices();
-    j.voice = voices.find(v=>v.name.includes("Male")||v.name.includes("John")||v.name.includes("English")) || voices[0];
+    j.voice = voices.find(v=>v.name.includes("Male")||v.name.includes("John")||v.lang.includes("en")) || voices[0];
     j.pitch=0.8; j.rate=1; j.volume=1;
     speechSynthesis.speak(j);
 }
 
 /* Wake word Detection */
-window.addEventListener("click",()=>{ // enables mic permission after first touch
+window.addEventListener("click",()=>{ // permission after first click
     const rec = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
     rec.continuous=true;
     rec.onresult = e=>{
         let t = e.results[e.resultIndex][0].transcript.toLowerCase();
-        if(t.includes("hey jarvis")) speak("At your service sir.");
+        if(t.includes("hey jarvis")){
+            speak("At your service sir.");
+        }
     };
     rec.start();
 });
