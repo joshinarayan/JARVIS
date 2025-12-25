@@ -1,6 +1,6 @@
 body{
     background:#000;
-    color:#00ffd5;
+    color:#00ff99;
     font-family:Consolas, monospace;
     margin:0;
     overflow:hidden;
@@ -10,17 +10,17 @@ body{
 #scanner{
     width:80vw;
     height:60vh;
-    border:2px solid #00ffbf;
+    border:2px solid #00ff99;
     margin:auto;
     margin-top:80px;
     position:relative;
-    box-shadow:0 0 25px #00ffbf;
+    box-shadow:0 0 30px #00ff99;
 }
 
 #line{
     width:100%;
     height:3px;
-    background:#00ffbf;
+    background:#00ff99;
     position:absolute;
     animation:scan 2.5s infinite linear;
 }
@@ -36,7 +36,7 @@ body{
     top:20px; left:20px;
     padding:10px 22px;
     background:#002b2b;
-    color:#00ffee;
+    color:#00ff99;
     border:none;
     font-size:17px;
 }
@@ -50,7 +50,7 @@ body{
     top:0; right:-350px;
     padding:10px;
     transition:.45s;
-    border-left:2px solid #00ffee;
+    border-left:2px solid #00ff99;
 }
 
 #messages{
@@ -69,12 +69,12 @@ body{
     flex:1;
     padding:10px;
     background:#000;
-    border:1px solid #00ffee;
-    color:#00ffee;
+    border:1px solid #00ff99;
+    color:#00ff99;
 }
 
 #send{
-    background:#00ffee;
+    background:#00ff99;
     border:none;
     padding:10px 14px;
     cursor:pointer;
