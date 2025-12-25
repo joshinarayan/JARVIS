@@ -59,7 +59,7 @@ let voiceGender="male";
 function speak(text){
     const msg=new SpeechSynthesisUtterance(text);
     msg.rate=1.04;
-    msg.pitch=0.85; // deeper male tone
+    msg.pitch=0.85; 
     speechSynthesis.speak(msg);
 }
 
@@ -86,31 +86,31 @@ async function sendMessage(){
         const res = await fetch("https://jarvis-backend-lllv.onrender.com/api/ask",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({ prompt: text }) // ← correct field name
+            body:JSON.stringify({ message: text }) // ✔ CORRECT FIELD NAME
         });
 
         const data = await res.json();
 
         if(!data.reply){
-            botMsg.innerText="Jarvis online but no response received, sir.";
+            botMsg.innerText="❌ No response from AI sir (backend received nothing)";
             return;
         }
 
-        // TYPEWRITER EFFECT 😏✨
         botMsg.innerText="";
         let i=0;
         let reply=data.reply;
-        let typing=setInterval(()=>{
+
+        let type=setInterval(()=>{
             botMsg.innerText+=reply[i];
             i++;
             if(i>=reply.length){
-                clearInterval(typing);
+                clearInterval(type);
                 speak(reply);
             }
         },25);
 
     }catch(err){
-        botMsg.innerText="❌ Connection failed sir.";
+        botMsg.innerText="Connection failed sir.";
     }
 }
 </script>
