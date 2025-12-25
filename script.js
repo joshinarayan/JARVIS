@@ -1,11 +1,15 @@
+// backend URL - already yours
 const backendURL = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-const chat = document.getElementById("chatPanel");
-document.getElementById("openChat").onclick = ()=> chat.style.right="0";
+// open chat drawer
+document.getElementById("chat-btn").onclick = () => {
+    document.getElementById("chat-panel").style.right = "0";
+};
 
+// send on button or Enter
 document.getElementById("send").onclick = sendMsg;
 document.getElementById("msg").addEventListener("keypress", e=>{
-    if(e.key==="Enter") sendMsg();
+    if(e.key === "Enter") sendMsg();
 });
 
 async function sendMsg(){
@@ -13,48 +17,57 @@ async function sendMsg(){
     if(!msg) return;
 
     add("You", msg);
-    document.getElementById("msg").value="";
+    document.getElementById("msg").value = "";
 
-    try{
+    try {
         let response = await fetch(backendURL,{
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body:JSON.stringify({message:msg})
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ message: msg })
         });
 
         let data = await response.json();
-        add("Jarvis", data.reply);
-        speak(data.reply);
-    }catch(err){
-        add("Jarvis","Backend error sir 😭");
+        let reply = data.reply || "No response sir.";
+
+        add("Jarvis", reply);
+        speak(reply);
+
+    } catch(e){
+        add("Jarvis", "Connection failed sir.");
+        speak("Connection failed sir.");
     }
 }
 
-/* add chat text */
+/* Add chat message */
 function add(who,text){
-    const msgDiv = document.getElementById("messages");
-    msgDiv.innerHTML += `<p><b>${who}:</b> ${text}</p>`;
-    msgDiv.scrollTop = msgDiv.scrollHeight;
+    document.getElementById("messages").innerHTML += `<p><b>${who}:</b> ${text}</p>`;
 }
 
-/* voice output */
+/* Male AI Voice */
 function speak(text){
     let j = new SpeechSynthesisUtterance(text);
     let voices = speechSynthesis.getVoices();
-    j.voice = voices.find(v=>v.name.includes("Male")||v.name.includes("John")||v.lang.includes("en")) || voices[0];
-    j.pitch=0.8; j.rate=1; j.volume=1;
+
+    j.voice = voices.find(v => 
+        v.name.includes("Male") || 
+        v.name.includes("Jarvis") || 
+        v.name.includes("Matthew") || 
+        v.name.includes("English") ) || voices[0];
+
+    j.pitch = 0.7;
+    j.rate = 0.9;
+    j.volume = 1;
+
     speechSynthesis.speak(j);
 }
 
-/* Wake word Detection */
-window.addEventListener("click",()=>{ // permission after first click
+/* Wake word: "Hey Jarvis" */
+window.addEventListener("click",()=>{
     const rec = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-    rec.continuous=true;
+    rec.continuous = true;
     rec.onresult = e=>{
         let t = e.results[e.resultIndex][0].transcript.toLowerCase();
-        if(t.includes("hey jarvis")){
-            speak("At your service sir.");
-        }
+        if(t.includes("hey jarvis")) speak("At your service sir.");
     };
     rec.start();
 });
