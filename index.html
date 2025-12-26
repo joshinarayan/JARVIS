@@ -3,26 +3,34 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JARVIS AI</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="jarvis-screen">
-  <div class="center">
-    <h1 class="jarvis-title">J.A.R.V.I.S</h1>
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring2"></div>
-  </div>
+<!-- 🟢 MAIN HUD -->
+<div id="hud">
+    <div id="core"></div>
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
 </div>
 
-<div id="chat-panel">
-  <div id="chat-header">JARVIS AI TERMINAL</div>
-  <div id="chat-box"></div>
+<!-- CHAT BUTTON -->
+<button id="openChat">☰</button>
 
-  <div id="input-area">
-    <input type="text" id="message" placeholder="Speak your command...">
-    <button id="send">➤</button>
-  </div>
+<!-- CHAT PANEL -->
+<div id="chatPanel">
+   <div id="topbar">
+      <span>J.A.R.V.I.S SYSTEM</span>
+      <button id="closeChat">✖</button>
+   </div>
+
+   <div id="messages"></div>
+
+   <div id="inputBox">
+       <input id="msgInput" placeholder="Speak your command sir...">
+       <button id="sendBtn">➤</button>
+   </div>
 </div>
 
 <script src="script.js"></script>
