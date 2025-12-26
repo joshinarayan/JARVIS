@@ -1,89 +1,115 @@
-body{
-  margin:0;
-  background:#02040a;
-  font-family:Consolas, monospace;
-  overflow:hidden;
+body {
+    margin:0;
+    background:#020617;
+    font-family:consolas, monospace;
+    overflow:hidden;
+    color:cyan;
 }
 
-/* CORE HUD */
-#hud{
-  width:200px;height:200px;
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
+/* HUD Layout */
+.hud{
+    width:100vw;
+    height:100vh;
+    position:relative;
 }
 
-#core{
-  width:60px;height:60px;
-  background:#00eaff;
-  border-radius:50%;
-  margin:auto;
-  box-shadow:0 0 30px #00eaff;
-  animation:corePulse 2s infinite;
+/* Logo */
+.logo{
+    text-align:center;
+    margin-top:25px;
+    font-size:22px;
+    letter-spacing:4px;
+    color:#00e6ff;
 }
 
-.ring{
-  border:2px solid #00eaffaa;
-  border-radius:50%;
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-}
-.r1{width:120px;height:120px;animation:ringSpin 6s linear infinite;}
-.r2{width:160px;height:160px;animation:ringSpin 8s reverse infinite;}
-.r3{width:220px;height:220px;animation:ringSpin 10s linear infinite;}
-
-@keyframes corePulse{0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
-@keyframes ringSpin{0%{transform:translate(-50%,-50%) rotate(0);}100%{transform:translate(-50%,-50%) rotate(360deg);}}
-
-/* CHAT BUTTON */
-#openChat{
-  position:fixed;bottom:25px;right:25px;
-  background:#00eaffcc;
-  border:none;border-radius:50%;
-  width:55px;height:55px;font-size:24px;
-  color:#001722;cursor:pointer;
+/* Arc Reactor Animation */
+.center-anim{
+    position:absolute;
+    top:40%;
+    left:50%;
+    transform:translate(-50%, -50%);
 }
 
-/* CHAT PANEL */
-#chatPanel{
-  width:100%;max-width:400px;
-  height:100vh;
-  background:#001722ee;
-  position:fixed;right:-100%;
-  top:0;transition:.4s;
-  display:flex;flex-direction:column;
-  border-left:2px solid #00eaff;
+.ring,.ring2{
+    width:160px;
+    height:160px;
+    border:2px solid cyan;
+    border-radius:50%;
+    position:absolute;
+    animation:spin 6s linear infinite;
+    opacity:0.6;
+}
+.ring2{
+    width:200px;height:200px;
+    animation-duration:9s;
+}
+.core{
+    width:60px;height:60px;
+    background:cyan; 
+    border-radius:50%;
+    margin:auto;
+    transform:translate(50%,50%);
+    animation:pulse 1.6s infinite alternate;
 }
 
-#topbar{
-  padding:12px;color:#00eaff;
-  display:flex;justify-content:space-between;
-  background:#002d40;
+/* Chat */
+.chat-btn{
+    position:absolute;
+    bottom:20px;right:20px;
+    background:cyan;color:#000;
+    border:none;padding:12px;
+    border-radius:50%;
+    font-size:25px;
+    cursor:pointer;
+}
+
+.chat-panel{
+    width:90vw;
+    height:70vh;
+    position:absolute;
+    bottom:-100%;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,20,40,0.9);
+    border:2px solid cyan;
+    border-radius:15px;
+    transition:.5s;
+    backdrop-filter:blur(6px);
+}
+
+.chat-header{
+    text-align:center;
+    padding:10px;
+    font-size:18px;
+    border-bottom:1px solid cyan;
 }
 
 #messages{
-  flex:1;padding:10px;
-  overflow-y:auto;font-size:15px;color:white;
+    height:75%;
+    overflow-y:auto;
+    padding:10px;
 }
 
-.msg{
-  margin:8px 0;padding:10px;
-  border-left:3px solid #00eaff;
-  background:#003647aa;
-  animation:fadeIn .4s;
+.message{
+    margin-bottom:10px;
+    background:rgba(0,255,255,0.1);
+    padding:8px;
+    border-left:3px solid cyan;
 }
 
-/* INPUT */
-#inputBox{
-  display:flex;padding:8px;
-  background:#00212e;border-top:1px solid #00eaff55;
+.chat-input-area{
+    display:flex;
+    border-top:1px solid cyan;
 }
-#msgInput{
-  flex:1;background:#00131d;color:#00eaff;
-  border:none;padding:12px;font-size:16px;
+.chat-input-area input{
+    flex:1;background:none;border:none;color:cyan;padding:10px;
 }
-#sendBtn{
-  padding:12px;background:#00eaff;border:none;
-  cursor:pointer;
+.chat-input-area button{
+    background:cyan;border:none;padding:10px;font-size:18px;color:black;
 }
 
-@keyframes fadeIn{from{opacity:.2;}to{opacity:1;}}
+.chat-open{bottom:10px;}
+::-webkit-scrollbar{width:4px;background:#001;}
+::-webkit-scrollbar-thumb{background:cyan;}
+@keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+@keyframes pulse{from{opacity:.5;}to{opacity:1;}}
