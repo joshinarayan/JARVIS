@@ -1,71 +1,48 @@
-const backendURL = "https://jarvis-backend-lllv.onrender.com/api/ask"; // replace if needed
+const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-let startX=0;
-const chatPanel=document.getElementById("chat-panel");
-
-document.body.addEventListener("touchstart",e=>startX=e.touches[0].clientX);
-document.body.addEventListener("touchend",e=>{
-  let x=e.changedTouches[0].clientX;
-  if(x-startX>80) openChat();
-  if(startX-x>80) closeChat();
+const chat = document.getElementById("chatPanel");
+document.getElementById("openChat").onclick=()=>chat.style.right="0";
+document.getElementById("closeChat").onclick=()=>chat.style.right="-100%";
+document.getElementById("sendBtn").onclick=send;
+document.getElementById("msgInput").addEventListener("keypress",e=>{
+  if(e.key==="Enter") send();
 });
 
-function openChat(){chatPanel.style.right="0";}
-function closeChat(){chatPanel.style.right="-100%";}
-
-document.getElementById("send").onclick=sendMessage;
-document.getElementById("message").addEventListener("keypress", e=>{
-  if(e.key==="Enter") sendMessage();
-});
-
-function addMessage(text,type){
-  const box=document.getElementById("chat-box");
-  const div=document.createElement("div");
-  div.className="message "+type;
-  div.innerText=text;
-  if(type==="bot"){
-    const btn=document.createElement("button");
-    btn.className="copy-btn";
-    btn.innerText="COPY";
-    btn.onclick=()=>navigator.clipboard.writeText(text);
-    div.appendChild(btn);
-  }
-  box.appendChild(div);
-  box.scrollTop=box.scrollHeight;
-  return div;
+function addMsg(text){
+  let msg=document.createElement("div");
+  msg.className="msg";
+  msg.innerHTML=text;
+  messages.appendChild(msg);
+  messages.scrollTop=messages.scrollHeight;
 }
 
 function speak(text){
-  const msg=new SpeechSynthesisUtterance(text);
-  msg.rate=0.93;
-  msg.pitch=0.7;
-  msg.voice=speechSynthesis.getVoices().find(v=>v.name.includes("Male")||v.name.includes("David"));
-  speechSynthesis.speak(msg);
+  let v=new SpeechSynthesisUtterance(text);
+  v.pitch=.7;v.rate=.95;v.volume=1;
+  v.voice=speechSynthesis.getVoices().find(x=>x.name.includes("Male"))||speechSynthesis.getVoices()[0];
+  speechSynthesis.speak(v);
 }
 
-async function sendMessage(){
-  const input=document.getElementById("message");
-  const text=input.value.trim();
-  if(!text) return;
+async function send(){
+  const txt=msgInput.value.trim(); 
+  if(!txt) return;
+  msgInput.value="";
+  addMsg("<b>You:</b> "+txt);
 
-  addMessage(text,"user");
-  input.value="";
-  const botMsg=addMessage("Processing...","bot");
+  const loader = addMsg("<b>Jarvis:</b> Processing...");
 
   try{
-    const res=await fetch(backendURL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:text})
-    });
-    const data=await res.json();
-    botMsg.innerText="";
-    for(let char of data.reply){ // typing animation
-      botMsg.innerText+=char;
-      await new Promise(r=>setTimeout(r,20));
-    }
-    speak(data.reply);
+     const res = await fetch(backend,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt:txt})
+     });
+
+     const data = await res.json();
+     loader.innerHTML="<b>Jarvis:</b> "+data.reply;
+     speak(data.reply);
+
   }catch{
-    botMsg.innerText="Connection failed sir.";
+     loader.innerHTML="<b>Jarvis:</b> System offline sir.";
   }
 }
