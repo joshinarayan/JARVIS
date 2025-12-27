@@ -1,90 +1,79 @@
-const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
+const backend="https://jarvis-backend-lllv.onrender.com/api/ask";
 
-/* UI elements */
-const chatPanel = document.getElementById("chatPanel");
-const openChat = document.getElementById("openChat");
-const messages = document.getElementById("messages");
-const input = document.getElementById("msg");
-const sendBtn = document.getElementById("send");
+/* LOGIN */
+function login(){
+ let u=user.value.trim(),p=pass.value.trim();
+ if(u&&p){
+  localStorage.setItem("auth","ok");
+  login-screen.style.display="none";
+  dashboard.style.display="block";
+  speak("Welcome back sir. Systems nominal.");
+  startWake();
+ }
+}
 
-/* OPEN CHAT PANEL */
-openChat.onclick = () => {
-  chatPanel.classList.add("open");
-};
+/* AUTO LOGIN */
+window.onload=()=>{
+ if(localStorage.getItem("auth")){
+   login-screen.style.display="none";
+   dashboard.style.display="block";
+   startWake();
+ }
+}
+
+/* CHAT */
+openChatBtn.onclick=()=>chatPanel.style.right="0";
+function openChat(){chatPanel.style.right="0";}
+function closeChat(){chatPanel.style.right="-100%";}
 
 /* ADD MESSAGE */
-function addMessage(text, type) {
-  const div = document.createElement("div");
-  div.className = `msg ${type}`;
-  div.innerText = text;
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-  return div;
+function add(text,type){
+ let d=document.createElement("div");
+ d.className="msg "+type;
+ d.innerText=text;
+ messages.append(d);
+ messages.scrollTop=messages.scrollHeight;
 }
 
-/* SPEECH OUTPUT - DEEP MALE JARVIS */
-function speak(txt) {
-  const v = new SpeechSynthesisUtterance(txt);
-  v.pitch = 0.4;
-  v.rate = 0.9;
-  v.volume = 1;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(v);
+/* SPEAK */
+function speak(t){
+ let v=new SpeechSynthesisUtterance(t);
+ v.pitch=.8;v.rate=.9;v.volume=1;
+ speechSynthesis.speak(v);
 }
 
-/* SENT TO BACKEND */
-async function send() {
-  let msg = input.value.trim();
-  if (!msg) return;
+/* SEND */
+async function send(){
+ let txt=msg.value.trim();if(!txt)return;
+ add(txt,"user");msg.value="";
+ speak("Processing sir");
 
-  addMessage(msg, "user");
-  input.value = "";
+ let r=await fetch(backend,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:txt})});
+ let data=await r.json();
 
-  let botBubble = addMessage("⟳ Processing, sir...", "bot");
+ add(data.reply,"bot");
+ speak(data.reply);
 
-  try {
-    const res = await fetch(backend, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: msg })
-    });
+ if(/open chat|show chat/i.test(txt)) openChat();
+}
+send.onclick=send;
+msg.addEventListener("keypress",e=>e.key=="Enter"&&send());
 
-    const data = await res.json();
+/* WAKE WORD + COMMANDS */
+function startWake(){
+ let R=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+ R.continuous=true;R.interimResults=false;
 
-    botBubble.innerText = data.reply || "⚠ No response sir.";
-    speak(botBubble.innerText);
+ R.onresult=e=>{
+  let t=e.results[e.resultIndex][0].transcript.toLowerCase();
+  console.log("Heard:",t);
 
-  } catch (err) {
-    botBubble.innerText = "⚠ Connection failed sir.";
-    console.log(err);
+  if(t.includes("jarvis")){
+    speak("Online sir");
   }
-
-  messages.scrollTop = messages.scrollHeight;
+  if(t.includes("open chat")) openChat();
+  if(t.includes("close chat")) closeChat();
+  if(t.includes("send") && msg.value.trim()) send();
+ };
+ R.start();
 }
-
-/* SEND BUTTON & ENTER */
-sendBtn.onclick = send;
-input.addEventListener("keypress", e => { if (e.key === "Enter") send(); });
-
-/* WAKE WORD: "Jarvis" - no infinite trigger */
-let listening = false;
-
-function startWakeWord() {
-  if (listening) return;
-  listening = true;
-
-  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  rec.continuous = true;
-
-  rec.onresult = e => {
-    let t = e.results[e.resultIndex][0].transcript.toLowerCase();
-    if (t.includes("jarvis")) {
-      speak("Online sir.");
-    }
-  };
-
-  rec.onend = () => { listening = false; setTimeout(startWakeWord, 500); };
-  rec.start();
-}
-
-startWakeWord();
