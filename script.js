@@ -1,62 +1,90 @@
 const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-/* OPEN CHAT */
-document.getElementById("openChat").onclick=()=>{
- document.getElementById("chatPanel").style.right="0";
+/* UI elements */
+const chatPanel = document.getElementById("chatPanel");
+const openChat = document.getElementById("openChat");
+const messages = document.getElementById("messages");
+const input = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
+
+/* OPEN CHAT PANEL */
+openChat.onclick = () => {
+  chatPanel.classList.add("open");
+};
+
+/* ADD MESSAGE */
+function addMessage(text, type) {
+  const div = document.createElement("div");
+  div.className = `msg ${type}`;
+  div.innerText = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
 }
 
-/* message handling */
-function add(text,type){
- let box=document.getElementById("messages");
- let div=document.createElement("div");
- div.className="msg "+type;
- div.innerText=text;
- box.append(div);
- box.scrollTop=box.scrollHeight;
+/* SPEECH OUTPUT - DEEP MALE JARVIS */
+function speak(txt) {
+  const v = new SpeechSynthesisUtterance(txt);
+  v.pitch = 0.4;
+  v.rate = 0.9;
+  v.volume = 1;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(v);
 }
 
-/* JARVIS DEEP VOICE */
-function speak(txt){
- let v=new SpeechSynthesisUtterance(txt);
- v.pitch=0.6;
- v.rate=0.85;
- v.volume=1;
- speechSynthesis.speak(v);
+/* SENT TO BACKEND */
+async function send() {
+  let msg = input.value.trim();
+  if (!msg) return;
+
+  addMessage(msg, "user");
+  input.value = "";
+
+  let botBubble = addMessage("⟳ Processing, sir...", "bot");
+
+  try {
+    const res = await fetch(backend, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: msg })
+    });
+
+    const data = await res.json();
+
+    botBubble.innerText = data.reply || "⚠ No response sir.";
+    speak(botBubble.innerText);
+
+  } catch (err) {
+    botBubble.innerText = "⚠ Connection failed sir.";
+    console.log(err);
+  }
+
+  messages.scrollTop = messages.scrollHeight;
 }
 
-/* SENDER */
-async function send(){
- let msg=document.getElementById("msg").value.trim();
- if(!msg) return;
- add(msg,"user");
- document.getElementById("msg").value="";
+/* SEND BUTTON & ENTER */
+sendBtn.onclick = send;
+input.addEventListener("keypress", e => { if (e.key === "Enter") send(); });
 
- let temp=add("Processing sir...","bot");
+/* WAKE WORD: "Jarvis" - no infinite trigger */
+let listening = false;
 
- let r=await fetch(backend,{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({prompt:msg})
- });
+function startWakeWord() {
+  if (listening) return;
+  listening = true;
 
- let data=await r.json();
- temp.innerText=data.reply;
- speak(data.reply);
+  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  rec.continuous = true;
+
+  rec.onresult = e => {
+    let t = e.results[e.resultIndex][0].transcript.toLowerCase();
+    if (t.includes("jarvis")) {
+      speak("Online sir.");
+    }
+  };
+
+  rec.onend = () => { listening = false; setTimeout(startWakeWord, 500); };
+  rec.start();
 }
 
-/* ENTER */
-document.getElementById("send").onclick=send;
-document.getElementById("msg").addEventListener("keypress",e=>{if(e.key=="Enter")send();});
-
-/* WAKE WORD "JARVIS" */
-window.addEventListener("click",()=>{
- let rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
- rec.continuous=true;
- rec.onresult=e=>{
-   let t=e.results[e.resultIndex][0].transcript.toLowerCase();
-   if(t.includes("jarvis")){
-     speak("Online sir.");
-   }
- };
- rec.start();
-});
+startWakeWord();
