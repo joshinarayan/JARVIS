@@ -1,59 +1,62 @@
-const API = "https://jarvis-backend-lllv.onrender.com/api/ask"; // Your backend
+const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-function toggleChat(){
-    document.getElementById("chatBox").classList.toggle("chat-open");
+/* OPEN CHAT */
+document.getElementById("openChat").onclick=()=>{
+ document.getElementById("chatPanel").style.right="0";
 }
 
-async function sendMessage(){
-    let msg = document.getElementById("msg").value.trim();
-    if(!msg) return;
-    
-    addMsg("YOU", msg);
-    document.getElementById("msg").value="";
-
-    let response = await askJarvis(msg);
-    typeReply(response);
-    speak(response);
+/* message handling */
+function add(text,type){
+ let box=document.getElementById("messages");
+ let div=document.createElement("div");
+ div.className="msg "+type;
+ div.innerText=text;
+ box.append(div);
+ box.scrollTop=box.scrollHeight;
 }
 
-async function askJarvis(prompt){
-    try{
-        const res = await fetch(API,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({prompt})
-        });
-        const data=await res.json();
-        return data.reply;
-    }catch{
-        return "Connection unstable sir.";
-    }
+/* JARVIS DEEP VOICE */
+function speak(txt){
+ let v=new SpeechSynthesisUtterance(txt);
+ v.pitch=0.6;
+ v.rate=0.85;
+ v.volume=1;
+ speechSynthesis.speak(v);
 }
 
-function addMsg(from,text){
-    document.getElementById("messages").innerHTML += `
-       <div class="message"><b>${from}:</b> ${text}</div>`;
+/* SENDER */
+async function send(){
+ let msg=document.getElementById("msg").value.trim();
+ if(!msg) return;
+ add(msg,"user");
+ document.getElementById("msg").value="";
+
+ let temp=add("Processing sir...","bot");
+
+ let r=await fetch(backend,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({prompt:msg})
+ });
+
+ let data=await r.json();
+ temp.innerText=data.reply;
+ speak(data.reply);
 }
 
-function typeReply(text){
-    let box = document.getElementById("messages");
-    let div = document.createElement("div");
-    div.className="message";
-    box.append(div);
+/* ENTER */
+document.getElementById("send").onclick=send;
+document.getElementById("msg").addEventListener("keypress",e=>{if(e.key=="Enter")send();});
 
-    let i=0;
-    let type=setInterval(()=>{
-        div.innerHTML = `<b>JARVIS:</b> ${text.slice(0,i)}`;
-        i++;
-        if(i>text.length) clearInterval(type);
-        box.scrollTop=box.scrollHeight;
-    },25);
-}
-
-function speak(text){
-    let v = new SpeechSynthesisUtterance(text);
-    v.pitch=0.8; 
-    v.rate=0.9; 
-    v.voice = speechSynthesis.getVoices().find(v=>v.name.includes("Male")) || speechSynthesis.getVoices()[0];
-    speechSynthesis.speak(v);
-}
+/* WAKE WORD "JARVIS" */
+window.addEventListener("click",()=>{
+ let rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+ rec.continuous=true;
+ rec.onresult=e=>{
+   let t=e.results[e.resultIndex][0].transcript.toLowerCase();
+   if(t.includes("jarvis")){
+     speak("Online sir.");
+   }
+ };
+ rec.start();
+});
