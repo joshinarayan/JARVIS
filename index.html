@@ -1,28 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS System</title>
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div id="core">
-   <div id="ring"></div>
-   <div id="center"></div>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="center">
+    <h1>JARVIS ACCESS</h1>
+    <input id="user" placeholder="Username">
+    <input id="pass" placeholder="Password" type="password">
+    <button onclick="login()">Authorize</button>
 </div>
 
-<!-- SWIPE CHAT PANEL -->
+<!-- MAIN DASHBOARD -->
+<div id="dashboard">
+
+    <canvas id="matrix"></canvas>
+
+    <div id="ring"></div>
+    <div id="system-logs"></div>
+    <h2 class="title">J A R V I S  O N L I N E</h2>
+
+    <button id="openChatBtn">☰ Chat</button>
+
+</div>
+
+<!-- CHAT PANEL -->
 <div id="chatPanel">
-   <div id="header">JARVIS ONLINE</div>
-   <div id="messages"></div>
 
-   <div id="inputBox">
-      <input id="msg" placeholder="Speak to me sir...">
-      <button id="send">➤</button>
-   </div>
+    <div id="chatHeader">JARVIS Console</div>
+
+    <div id="messages"></div>
+
+    <div id="chatInput">
+        <input id="msg" placeholder="Speak or type command...">
+        <button id="send">➤</button>
+    </div>
+
 </div>
-
-<div id="openChat">💠</div>
 
 <script src="script.js"></script>
 </body>
