@@ -1,33 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JARVIS AI</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-<div class="hud">
-    <div class="logo">JARVIS ONLINE</div>
 
-    <div class="center-anim">
-        <div class="ring"></div>
-        <div class="ring2"></div>
-        <div class="core"></div>
-    </div>
-
-    <button class="chat-btn" onclick="toggleChat()">💬</button>
-
-    <div id="chatBox" class="chat-panel">
-        <div class="chat-header">JARVIS INTERFACE</div>
-        <div id="messages"></div>
-
-        <div class="chat-input-area">
-            <input id="msg" type="text" placeholder="Speak, sir..." />
-            <button onclick="sendMessage()">➤</button>
-        </div>
-    </div>
+<div id="core">
+   <div id="ring"></div>
+   <div id="center"></div>
 </div>
+
+<!-- SWIPE CHAT PANEL -->
+<div id="chatPanel">
+   <div id="header">JARVIS ONLINE</div>
+   <div id="messages"></div>
+
+   <div id="inputBox">
+      <input id="msg" placeholder="Speak to me sir...">
+      <button id="send">➤</button>
+   </div>
+</div>
+
+<div id="openChat">💠</div>
 
 <script src="script.js"></script>
 </body>
