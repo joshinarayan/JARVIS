@@ -1,6 +1,6 @@
 const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-/* ================= ELEMENTS ================= */
+/* Elements */
 const loginScreen = document.getElementById("login-screen");
 const dashboard = document.getElementById("dashboard");
 const messages = document.getElementById("messages");
@@ -28,65 +28,53 @@ window.onload = ()=>{
     if(localStorage.getItem("auth")){
         loginScreen.style.display="none";
         dashboard.style.display="block";
-        speak("System boot complete. Ready for duty sir.");
+        speak("System boot sequence complete. Good morning sir.");
         initMatrix();
     }
 };
 
-/* ================= UI CONTROL ================= */
+/* UI */
 openChatBtn.onclick = ()=> chatPanel.style.right="0";
 function openChat(){ chatPanel.style.right="0"; }
 function closeChat(){ chatPanel.style.right="-100%"; }
 
-/* ================= MESSAGE RENDER ================= */
+/* Chat rendering */
 function add(text,type){
-    let d = document.createElement("div");
-    d.className = "msg "+type;
-    d.innerText = text;
+    let d=document.createElement("div");
+    d.className="msg "+type;
+    d.innerText=text;
     messages.appendChild(d);
-    messages.scrollTop = messages.scrollHeight;
+    messages.scrollTop=messages.scrollHeight;
 }
 
-/* ================= VOICE ENGINE =============== */
-let jarvisVoice = null;
-
+/* ================= VOICE ================= */
+let jarvisVoice=null;
 function loadVoices(){
-    let voices = speechSynthesis.getVoices();
-
-    // FORCE MALE DEEP VOICE
-    jarvisVoice = voices.find(v=>/male|daniel|brian|george|alex|barry|english/i.test(v.name))
+    let voices=speechSynthesis.getVoices();
+    jarvisVoice = voices.find(v=>/male|george|david|daniel|alex|english/i.test(v.name))
                  || voices.find(v=>v.lang=="en-US")
                  || voices.find(v=>v.lang=="en-GB")
                  || voices[0];
 }
-speechSynthesis.onvoiceschanged = loadVoices;
+speechSynthesis.onvoiceschanged=loadVoices;
 
 function speak(text){
-    const u = new SpeechSynthesisUtterance(text);
-    u.voice = jarvisVoice;
-    u.pitch = 0.55;       // deeper bass
-    u.rate = 0.84;        // robotic pacing
-    u.volume = 1;
-
-    // slight layer to feel metallic/robotic
-    const u2 = new SpeechSynthesisUtterance(text);
-    u2.pitch = 0.40;
-    u2.rate = 0.70;
-    u2.volume = 0.8;
-
+    const u=new SpeechSynthesisUtterance(text);
+    u.voice=jarvisVoice;
+    u.pitch=0.55;
+    u.rate=0.85;
+    u.volume=1;
+    speechSynthesis.cancel();        // <<< stops double speaking
     speechSynthesis.speak(u);
-    setTimeout(()=> speechSynthesis.speak(u2), 90);
 }
 
-/* ================= OPEN APP / WEBSITE =============== */
-const appLinks = {
+/* ================= Universal OPEN commands ================= */
+const apps={
     youtube:"https://youtube.com",
     whatsapp:"https://wa.me",
     instagram:"https://instagram.com",
     facebook:"https://facebook.com",
-    twitter:"https://x.com",
     spotify:"spotify://",
-    chrome:"googlechrome://",
     snapchat:"https://snapchat.com",
     gmail:"https://mail.google.com",
     google:"https://google.com",
@@ -98,53 +86,87 @@ const appLinks = {
 };
 
 function openApp(name){
-    name = name.toLowerCase().replace("open ","").trim();
-    if(appLinks[name]){
+    name=name.toLowerCase().replace("open ","").trim();
+    if(apps[name]){
         speak(`Opening ${name} sir`);
-        window.open(appLinks[name],"_blank");
-    } else {
-        speak(`Not found sir, searching instead`);
-        window.open("https://www.google.com/search?q="+name,"_blank");
+        window.open(apps[name],"_blank");
+    }else{
+        speak(`Not registered. Searching instead sir.`);
+        window.open(`https://www.google.com/search?q=${name}`,"_blank");
     }
 }
 
-/* ================= SEND ================= */
+/* ================= Smart System Commands ================= */
+
+function localCommands(t){
+    if(t.startsWith("open ")) return openApp(t.replace("open",""));
+    if(t.startsWith("search")){ 
+        speak("Searching sir"); 
+        window.open(`https://www.google.com/search?q=${t.replace("search","")}`); 
+        return true;
+    }
+    if(t.includes("play music")){
+        speak("Launching music sir");
+        window.open("https://www.youtube.com/results?search_query=music+playlist");
+        return true;
+    }
+    if(t.includes("increase volume")){ speak("Volume up sir"); return true; }
+    if(t.includes("decrease volume")){ speak("Volume reduced sir"); return true; }
+    if(t.includes("mute")){ speak("Audio muted sir"); return true;}
+    if(t.includes("unmute")){ speak("Audio restored sir"); return true;}
+
+    // Flashlight works only on supported browsers
+    if(t.includes("flashlight on")){ toggleTorch(true); return true;}
+    if(t.includes("flashlight off")){ toggleTorch(false); return true;}
+
+    return false; // means send to AI
+}
+
+/* Flashlight (mobile only) */
+let stream;
+async function toggleTorch(on){
+    try{
+        if(!stream) stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+        const track=stream.getVideoTracks()[0];
+        await track.applyConstraints({advanced:[{torch:on}]});
+        speak(`Flashlight ${on?"activated":"disabled"} sir`);
+    }catch{ speak("Torch not supported on this device sir"); }
+}
+
+/* ================= SEND TO BACKEND ================= */
 async function send(){
-    let text = msg.value.trim();
+    let text=msg.value.trim();
     if(!text) return;
 
     add(text,"user");
-    msg.value = "";
+    msg.value="";
     speak("Processing sir.");
 
-    // Quick commands
-    if(text.startsWith("open")) return openApp(text.replace("open",""));
-    if(/open chat/i.test(text)) return openChat();
-    if(/close chat/i.test(text)) return closeChat();
+    if(localCommands(text.toLowerCase())) return;  // no AI call if handled
 
     try{
-        let r = await fetch(backend,{
+        let r=await fetch(backend,{
             method:"POST",
             headers:{ "Content-Type":"application/json" },
             body:JSON.stringify({prompt:text})
         });
-        let data = await r.json();
+        let data=await r.json();
 
         add(data.reply,"bot");
-        speak(data.reply);   // <-- HERE WE SPEAK REAL RESPONSE
+        speak(data.reply);
 
     }catch{
         add("Connection failed 💀","bot");
-        speak("Connection failed sir");
+        speak("Server is unresponsive sir");
     }
 }
 
-sendBtn.onclick = send;
-msg.addEventListener("keypress",e=>e.key==="Enter" && send());
+sendBtn.onclick=send;
+msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-/* ================= VOICE LISTENING ================= */
-const recognition = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-recognition.continuous = true;
+/* ================= Voice Mode (Hold J) ================= */
+const recognition=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+recognition.continuous=true;
 
 document.addEventListener("keydown",e=>{
     if(e.key==="j"){
@@ -153,59 +175,45 @@ document.addEventListener("keydown",e=>{
     }
 });
 
-recognition.onresult = e=>{
-    let t = e.results[e.results.length-1][0].transcript.toLowerCase();
+recognition.onresult=e=>{
+    let t=e.results[e.results.length-1][0].transcript.toLowerCase();
     console.log("🎤",t);
 
-    if(!t.includes("jarvis")) return;
-    t = t.replace("jarvis","").trim();
+    t=t.replace("jarvis","").trim();
+    if(!t) return;
 
-    if(t.startsWith("open")) return openApp(t);
-    if(t.includes("open chat")) return openChat();
-    if(t.includes("close chat")) return closeChat();
+    if(localCommands(t)) return;
 
-    speak("Processing sir.");
+    speak("Processing sir");
     sendTextToAI(t);
 };
 
 async function sendTextToAI(text){
     add(text,"user");
-    let r = await fetch(backend,{
+    let r=await fetch(backend,{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({prompt:text})
     });
-    let d = await r.json();
+    let d=await r.json();
     add(d.reply,"bot");
     speak(d.reply);
 }
 
-/* ================= MATRIX BACKGROUND ================= */
+/* Background matrix */
 function initMatrix(){
-    const canvas = document.getElementById("matrix");
-    const ctx = canvas.getContext("2d");
-    canvas.height = window.innerHeight;
-    canvas.width = window.innerWidth;
-
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789#$%&*";
-    const font = 12;
-    const columns = canvas.width / font;
-    const drops = Array(columns).fill(1);
-
-    function draw(){
+    const c=document.getElementById("matrix");
+    const ctx=c.getContext("2d");
+    c.height=innerHeight; c.width=innerWidth;
+    const chars="abcdefghijklmnopqrstuvwxyz0123456789#$%&*";
+    const font=12; const cols=c.width/font; const drops=Array(cols).fill(1);
+    setInterval(()=>{
         ctx.fillStyle="rgba(0,0,0,0.05)";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-
-        ctx.fillStyle="#0aff87";
-        ctx.font=font+"px monospace";
-
-        for(let i=0;i<drops.length;i++){
-            let text = chars.charAt(Math.floor(Math.random()*chars.length));
-            ctx.fillText(text,i*font,drops[i]*font);
-
-            if(drops[i]*font > canvas.height && Math.random()>0.95) drops[i]=0;
-            drops[i]++;
-        }
-    }
-    setInterval(draw,40);
+        ctx.fillRect(0,0,c.width,c.height);
+        ctx.fillStyle="#00ff9d"; ctx.font=font+"px monospace";
+        drops.forEach((y,i)=>{
+            ctx.fillText(chars[Math.random()*chars.length|0],i*font,y*font);
+            drops[i]=(y*font>c.height&&Math.random()>0.95)?0:y+1;
+        });
+    },40);
 }
