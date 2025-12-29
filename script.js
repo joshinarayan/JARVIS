@@ -54,29 +54,52 @@ function add(text,type){
     messages.scrollTop = messages.scrollHeight;
 }
 
+let jarvisVoice = null;
+
+function loadVoices(){
+    const voices = speechSynthesis.getVoices();
+
+    // try picking deep male voices
+    jarvisVoice = voices.find(v =>
+        v.name.toLowerCase().includes("male") ||
+        v.name.toLowerCase().includes("daniel") ||
+        v.name.toLowerCase().includes("alex") ||
+        v.name.toLowerCase().includes("english united kingdom") ||
+        v.name.toLowerCase().includes("en-gb")
+    ) || voices.find(v =>
+        v.name.toLowerCase().includes("english")
+    ) || voices[0];
+}
+
+// Load voices when available
+speechSynthesis.onvoiceschanged = loadVoices;
 
 function speak(text){
     const utter = new SpeechSynthesisUtterance(text);
 
-    // Voice selection
-    const voices = speechSynthesis.getVoices();
-    utter.voice = voices.find(v =>
-        v.name.toLowerCase().includes("male") ||
-        v.name.toLowerCase().includes("english") ||
-        v.name.toLowerCase().includes("alex")
-    ) || voices[0];
+    utter.voice = jarvisVoice;
+    utter.pitch = 0.45;      // Lower tone
+    utter.rate = 0.88;       // Calm robotic
+    utter.volume = 1;
 
-    // Robotic tone adjustments
-    utter.pitch = 0.45;   // lower tone
-    utter.rate = 0.85;      // natural speed
-    utter.volume = 1;    // max volume
+    // Audio processing
+    const ctx = new AudioContext();
+    const source = ctx.createMediaStreamSource(
+        new MediaStream([speechSynthesis.speak(utter)])
+    );
 
-    // Add slight robotic artifacts
-    utter.onstart = () => {
-        // Could later add background hum fx
-    };
+    // Create robotic filter
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowshelf";
+    filter.frequency.value = 350;
+    filter.gain.value = 18;
 
-    speechSynthesis.speak(utter);
+    const gain = ctx.createGain();
+    gain.gain.value = 1.3;
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
 }
 
 // ================= SEND TO AI =================
