@@ -1,6 +1,6 @@
 const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-// 🔹 Quick element getters
+// ========== ELEMENTS ==========
 const loginScreen = document.getElementById("login-screen");
 const dashboard = document.getElementById("dashboard");
 const messages = document.getElementById("messages");
@@ -11,100 +11,75 @@ const chatPanel = document.getElementById("chatPanel");
 const user = document.getElementById("user");
 const pass = document.getElementById("pass");
 
-
-// ================= LOGIN =================
+//================ LOGIN ==================
 function login(){
-    let u = user.value.trim();
-    let p = pass.value.trim();
-
-    if(!u || !p){
+    if(!user.value.trim() || !pass.value.trim()){
         alert("Enter username & password bro 😑");
         return;
     }
 
-    localStorage.setItem("auth","ok");
-    loginScreen.style.display = "none";
-    dashboard.style.display = "block";
-    speak("Welcome back sir, systems online.");
-    startWake();
+    localStorage.setItem("auth","yes");
+    loginScreen.style.display="none";
+    dashboard.style.display="block";
+    speak("Welcome back sir. Systems online.");
+    initMatrix();
 }
-
-// Auto-login if already saved
 window.onload = () =>{
     if(localStorage.getItem("auth")){
         loginScreen.style.display="none";
         dashboard.style.display="block";
-        startWake();
+        initMatrix();
+        speak("System boot complete. Ready for duty sir.");
     }
 };
 
 
-// =============== CHAT PANEL =================
-openChatBtn.onclick = ()=> chatPanel.style.right="0";
+//============== UI CONTROL ============
+openChatBtn.onclick=()=>chatPanel.style.right="0";
 function openChat(){ chatPanel.style.right="0"; }
 function closeChat(){ chatPanel.style.right="-100%"; }
 
 
-// ============= ADD MESSAGE ==============
+//============== MESSAGE RENDER ==========
 function add(text,type){
-    let d = document.createElement("div");
-    d.className ="msg "+type;
-    d.innerText = text;
+    let d=document.createElement("div");
+    d.className="msg "+type;
+    d.innerText=text;
     messages.appendChild(d);
-    messages.scrollTop = messages.scrollHeight;
+    messages.scrollTop=messages.scrollHeight;
 }
 
-let jarvisVoice = null;
 
+//============== VOICE FIXED (Real Working) ==========
+let jarvisVoice=null;
 function loadVoices(){
-    const voices = speechSynthesis.getVoices();
+    let voices=speechSynthesis.getVoices();
 
-    // try picking deep male voices
-    jarvisVoice = voices.find(v =>
-        v.name.toLowerCase().includes("male") ||
-        v.name.toLowerCase().includes("daniel") ||
-        v.name.toLowerCase().includes("alex") ||
-        v.name.toLowerCase().includes("english united kingdom") ||
-        v.name.toLowerCase().includes("en-gb")
-    ) || voices.find(v =>
-        v.name.toLowerCase().includes("english")
-    ) || voices[0];
+    jarvisVoice = voices.find(v=>v.name.toLowerCase().includes("male")) ||
+                  voices.find(v=>v.name.includes("Daniel")) ||
+                  voices.find(v=>v.name.includes("Alex")) ||
+                  voices.find(v=>v.lang==="en-GB") ||
+                  voices.find(v=>v.lang==="en-US") ||
+                  voices[0];
 }
-
-// Load voices when available
 speechSynthesis.onvoiceschanged = loadVoices;
 
-function speak(text){
-    const utter = new SpeechSynthesisUtterance(text);
+function speak(t){
+    let u=new SpeechSynthesisUtterance(t);
+    u.voice=jarvisVoice;
+    u.pitch=0.55;
+    u.rate=0.82;
+    u.volume=1;
 
-    utter.voice = jarvisVoice;
-    utter.pitch = 0.45;      // Lower tone
-    utter.rate = 0.88;       // Calm robotic
-    utter.volume = 1;
-
-    // Audio processing
-    const ctx = new AudioContext();
-    const source = ctx.createMediaStreamSource(
-        new MediaStream([speechSynthesis.speak(utter)])
-    );
-
-    // Create robotic filter
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowshelf";
-    filter.frequency.value = 350;
-    filter.gain.value = 18;
-
-    const gain = ctx.createGain();
-    gain.gain.value = 1.3;
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
+    // slight robotic feel
+    u.onstart=()=>console.log("🔊 Speaking...");
+    speechSynthesis.speak(u);
 }
 
-// ================= SEND TO AI =================
+
+//============== SEND MESSAGE ==========
 async function send(){
-    let text = msg.value.trim();
+    let text=msg.value.trim();
     if(!text) return;
 
     add(text,"user");
@@ -112,51 +87,77 @@ async function send(){
     speak("Processing sir.");
 
     try{
-        let r = await fetch(backend,{
+        let r=await fetch(backend,{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({prompt:text})
         });
 
-        let data = await r.json();
+        let data=await r.json();
         add(data.reply,"bot");
         speak(data.reply);
 
-        // Voice commands inside chat
         if(/open chat/i.test(text)) openChat();
         if(/close chat/i.test(text)) closeChat();
 
-    }catch(e){
-        add("Connection error bro 😭","bot");
-        speak("Connection error.");
+    }catch{
+        add("Connection down? Maybe Ultron is messing again 😭","bot");
+        speak("Connection failed sir.");
     }
 }
 
-sendBtn.onclick = send;
-msg.addEventListener("keypress",e=>e.key==="Enter" && send());
+sendBtn.onclick=send;
+msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-// Wake word mode
-let listening = false;
 
-window.addEventListener("keydown", (e)=>{
-    if(e.key==="j"){ // quick wake
-        listening=true;
-        speak("Listening, sir.");
+//============== WAKE MODE ==============
+document.addEventListener("keydown",e=>{
+    if(e.key==="j"){
+        speak("Listening sir.");
+        recognition.start();
     }
 });
 
-async function processVoiceCommand(text){
-    if(text.includes("open chat")) openChat();
-    if(text.includes("clear memory")) memory = [];
-    if(text.includes("battery")) speak("You are running 100% power, sir. Like Gojo on steroids.");
+const recognition=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+recognition.continuous=true;
+recognition.onresult=e=>{
+    let t=e.results[e.results.length-1][0].transcript.toLowerCase();
+    console.log("🎤",t);
 
-    // Default AI reply
-    const reply = await sendPrompt(text);
-    speak(reply);
-    display(reply);
+    if(t.includes("open chat")){openChat(); speak("Console open.");}
+    if(t.includes("close chat")){closeChat(); speak("Console hidden.");}
+    if(t.includes("jarvis")) speak("Online sir.");
+
+    if(!t.includes("jarvis")) return;
+};
+
+
+//=========== MATRIX BACKGROUND ==========
+function initMatrix(){
+    const canvas=document.getElementById("matrix");
+    const ctx=canvas.getContext("2d");
+    canvas.height=window.innerHeight;
+    canvas.width=window.innerWidth;
+
+    const chars="abcdefghijklmnopqrstuvwxyz0123456789#$%&*";
+    const font=12;
+    const columns=canvas.width/font;
+    const drops=Array(columns).fill(1);
+
+    function draw(){
+        ctx.fillStyle="rgba(0,0,0,0.05)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        ctx.fillStyle="#0aff87";
+        ctx.font=font+"px monospace";
+
+        for(let i=0;i<drops.length;i++){
+            let text=chars.charAt(Math.floor(Math.random()*chars.length));
+            ctx.fillText(text,i*font,drops[i]*font);
+
+            if(drops[i]*font>canvas.height && Math.random()>0.95) drops[i]=0;
+            drops[i]++;
+        }
+    }
+    setInterval(draw,40);
 }
-
-// On boot auto greet
-setTimeout(()=>{
-    speak("System boot complete. Online and ready, sir.");
-},1500);
