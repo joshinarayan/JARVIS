@@ -47,27 +47,24 @@ function add(text,type){
     messages.scrollTop=messages.scrollHeight;
 }
 
-/* ================= VOICE ================= */
-let jarvisVoice=null;
-function loadVoices(){
-    let voices=speechSynthesis.getVoices();
-    jarvisVoice = voices.find(v=>/male|george|david|daniel|alex|english/i.test(v.name))
-                 || voices.find(v=>v.lang=="en-US")
-                 || voices.find(v=>v.lang=="en-GB")
-                 || voices[0];
-}
-speechSynthesis.onvoiceschanged=loadVoices;
-
 function speak(text){
-    const u=new SpeechSynthesisUtterance(text);
-    u.voice=jarvisVoice;
-    u.pitch=0.55;
-    u.rate=0.85;
-    u.volume=1;
-    speechSynthesis.cancel();        // <<< stops double speaking
+    speechSynthesis.cancel(); // full reset, no double speak ever
+
+    const voices = speechSynthesis.getVoices();
+
+    // Force deep male robotic tone
+    let voice = voices.find(v=>/male|david|daniel|george|alex|english|us/i.test(v.name))
+               || voices.find(v=>v.lang.includes("en"))
+               || voices[0];
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = voice;
+    u.pitch = 0.52;   // deep bassy tone
+    u.rate  = 0.82;
+    u.volume = 1;
+
     speechSynthesis.speak(u);
 }
-
 /* ================= Universal OPEN commands ================= */
 const apps={
     youtube:"https://youtube.com",
