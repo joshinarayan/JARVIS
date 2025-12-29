@@ -47,24 +47,23 @@ function add(text,type){
     messages.scrollTop=messages.scrollHeight;
 }
 
+/* ================= VOICE =============== */
 function speak(text){
-    speechSynthesis.cancel(); // full reset, no double speak ever
-
+    speechSynthesis.cancel();
     const voices = speechSynthesis.getVoices();
 
-    // Force deep male robotic tone
     let voice = voices.find(v=>/male|david|daniel|george|alex|english|us/i.test(v.name))
-               || voices.find(v=>v.lang.includes("en"))
-               || voices[0];
+        || voices.find(v=>v.lang.includes("en"))
+        || voices[0];
 
     const u = new SpeechSynthesisUtterance(text);
     u.voice = voice;
-    u.pitch = 0.52;   // deep bassy tone
+    u.pitch = 0.52;
     u.rate  = 0.82;
     u.volume = 1;
-
     speechSynthesis.speak(u);
 }
+
 /* ================= Universal OPEN commands ================= */
 const apps={
     youtube:"https://youtube.com",
@@ -93,33 +92,23 @@ function openApp(name){
     }
 }
 
-/* ================= Smart System Commands ================= */
-
+/* ================= Smart Local Commands ================= */
 function localCommands(t){
     if(t.startsWith("open ")) return openApp(t.replace("open",""));
-    if(t.startsWith("search")){ 
-        speak("Searching sir"); 
-        window.open(`https://www.google.com/search?q=${t.replace("search","")}`); 
-        return true;
-    }
-    if(t.includes("play music")){
-        speak("Launching music sir");
-        window.open("https://www.youtube.com/results?search_query=music+playlist");
-        return true;
-    }
-    if(t.includes("increase volume")){ speak("Volume up sir"); return true; }
-    if(t.includes("decrease volume")){ speak("Volume reduced sir"); return true; }
+    if(t.startsWith("search")){ speak("Searching sir"); window.open(`https://www.google.com/search?q=${t.replace("search","")}`); return true;}
+    if(t.includes("play music")){ speak("Launching music sir"); window.open("https://www.youtube.com/results?search_query=music+playlist"); return true;}
+    if(t.includes("increase volume")){ speak("Volume increased sir"); return true;}
+    if(t.includes("decrease volume")){ speak("Volume reduced sir"); return true;}
     if(t.includes("mute")){ speak("Audio muted sir"); return true;}
     if(t.includes("unmute")){ speak("Audio restored sir"); return true;}
 
-    // Flashlight works only on supported browsers
     if(t.includes("flashlight on")){ toggleTorch(true); return true;}
     if(t.includes("flashlight off")){ toggleTorch(false); return true;}
 
-    return false; // means send to AI
+    return false;
 }
 
-/* Flashlight (mobile only) */
+/* Flashlight */
 let stream;
 async function toggleTorch(on){
     try{
@@ -139,7 +128,7 @@ async function send(){
     msg.value="";
     speak("Processing sir.");
 
-    if(localCommands(text.toLowerCase())) return;  // no AI call if handled
+    if(localCommands(text.toLowerCase())) return;
 
     try{
         let r=await fetch(backend,{
@@ -148,7 +137,6 @@ async function send(){
             body:JSON.stringify({prompt:text})
         });
         let data=await r.json();
-
         add(data.reply,"bot");
         speak(data.reply);
 
@@ -161,30 +149,39 @@ async function send(){
 sendBtn.onclick=send;
 msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-/* ================= Voice Mode (Hold J) ================= */
-const recognition=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-recognition.continuous=true;
+/* ================= ALWAYS-LISTENING JARVIS MODE ================= */
 
-document.addEventListener("keydown",e=>{
-    if(e.key==="j"){
-        speak("Listening sir");
-        recognition.start();
-    }
-});
+let commandMode = false;
 
-recognition.onresult=e=>{
-    let t=e.results[e.results.length-1][0].transcript.toLowerCase();
+const recog=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+recog.continuous=true;
+recog.interimResults=true;
+recog.lang="en-US";
+
+recog.onresult=e=>{
+    let t=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
     console.log("🎤",t);
 
-    t=t.replace("jarvis","").trim();
-    if(!t) return;
+    if(t.includes("jarvis") && !commandMode){
+        commandMode = true;
+        speak("Yes sir.");
+        return;
+    }
 
-    if(localCommands(t)) return;
+    if(commandMode){
+        if(t.includes("stop listening")){ speak("Going silent sir."); commandMode=false; return;}
+        if(localCommands(t)) { commandMode=false; return; }
 
-    speak("Processing sir");
-    sendTextToAI(t);
+        sendTextToAI(t);
+        commandMode=false;
+    }
 };
 
+recog.onerror=()=>recog.start();
+recog.onend=()=>recog.start();
+recog.start();
+
+/* Text to AI */
 async function sendTextToAI(text){
     add(text,"user");
     let r=await fetch(backend,{
