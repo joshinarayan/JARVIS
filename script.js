@@ -17,28 +17,25 @@ function login(){
         alert("Enter username & password bro 😑");
         return;
     }
-
     localStorage.setItem("auth","yes");
     loginScreen.style.display="none";
     dashboard.style.display="block";
     speak("Welcome back sir. Systems online.");
     initMatrix();
 }
-window.onload = () =>{
+window.onload =()=>{
     if(localStorage.getItem("auth")){
         loginScreen.style.display="none";
         dashboard.style.display="block";
-        initMatrix();
         speak("System boot complete. Ready for duty sir.");
+        initMatrix();
     }
 };
-
 
 //============== UI CONTROL ============
 openChatBtn.onclick=()=>chatPanel.style.right="0";
 function openChat(){ chatPanel.style.right="0"; }
 function closeChat(){ chatPanel.style.right="-100%"; }
-
 
 //============== MESSAGE RENDER ==========
 function add(text,type){
@@ -49,88 +46,131 @@ function add(text,type){
     messages.scrollTop=messages.scrollHeight;
 }
 
-
-//============== VOICE FIXED (Real Working) ==========
+//============== VOICE ==============
 let jarvisVoice=null;
 function loadVoices(){
     let voices=speechSynthesis.getVoices();
-
-    jarvisVoice = voices.find(v=>v.name.toLowerCase().includes("male")) ||
-                  voices.find(v=>v.name.includes("Daniel")) ||
-                  voices.find(v=>v.name.includes("Alex")) ||
-                  voices.find(v=>v.lang==="en-GB") ||
-                  voices.find(v=>v.lang==="en-US") ||
-                  voices[0];
+    jarvisVoice = voices.find(v=>/male|david|george|alex|jarvis/i.test(v.name)) ||
+                   voices.find(v=>v.lang==="en-GB") ||
+                   voices[0];
 }
 speechSynthesis.onvoiceschanged = loadVoices;
 
-function speak(t){
-    let u=new SpeechSynthesisUtterance(t);
+// 🔥 Metallic Deep JARVIS voice
+function speak(text){
+    let u=new SpeechSynthesisUtterance(text);
     u.voice=jarvisVoice;
-    u.pitch=0.55;
-    u.rate=0.82;
+    u.pitch=0.45;
+    u.rate=0.78;
     u.volume=1;
 
-    // slight robotic feel
-    u.onstart=()=>console.log("🔊 Speaking...");
+    let u2=new SpeechSynthesisUtterance(text);
+    u2.pitch=0.35;
+    u2.rate=0.70;
+
     speechSynthesis.speak(u);
+    setTimeout(()=>speechSynthesis.speak(u2),80);
 }
 
+//============== UNIVERSAL OPEN APP/SITE ==========
+const appLinks={
+    youtube:"https://youtube.com",
+    whatsapp:"https://wa.me",
+    instagram:"https://instagram.com",
+    facebook:"https://facebook.com",
+    twitter:"https://x.com",
+    spotify:"spotify://",
+    chrome:"googlechrome://",
+    snapchat:"https://snapchat.com",
+    gmail:"https://mail.google.com",
+    google:"https://google.com",
+    github:"https://github.com",
+    netflix:"https://netflix.com",
+    amazon:"https://amazon.in",
+    flipkart:"https://flipkart.com",
+    discord:"https://discord.com/app"
+};
 
-//============== SEND MESSAGE ==========
+function openApp(name){
+    name=name.toLowerCase().replace("open ","").trim();
+    if(appLinks[name]){
+        speak(`Opening ${name} sir`);
+        window.open(appLinks[name],"_blank");
+    }else{
+        speak(`App not registered sir. Searching instead`);
+        window.open(`https://www.google.com/search?q=${name}`,"_blank");
+    }
+}
+
+//============== SEND TO BACKEND ==========
 async function send(){
     let text=msg.value.trim();
     if(!text) return;
-
     add(text,"user");
     msg.value="";
     speak("Processing sir.");
 
+    // 🔥 action commands before AI
+    if(text.toLowerCase().startsWith("open")) return openApp(text.replace("open","").trim());
+    if(/open chat/i.test(text)) return openChat();
+    if(/close chat/i.test(text)) return closeChat();
+
     try{
         let r=await fetch(backend,{
             method:"POST",
-            headers:{"Content-Type":"application/json"},
+            headers:{ "Content-Type":"application/json" },
             body:JSON.stringify({prompt:text})
         });
-
         let data=await r.json();
         add(data.reply,"bot");
         speak(data.reply);
 
-        if(/open chat/i.test(text)) openChat();
-        if(/close chat/i.test(text)) closeChat();
-
     }catch{
-        add("Connection down? Maybe Ultron is messing again 😭","bot");
-        speak("Connection failed sir.");
+        add("Connection failed 💀","bot");
+        speak("Connection failed sir");
     }
 }
 
 sendBtn.onclick=send;
 msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-
-//============== WAKE MODE ==============
+//============== VOICE LISTENING MODE ==============
 document.addEventListener("keydown",e=>{
-    if(e.key==="j"){
-        speak("Listening sir.");
+    if(e.key==="j") {
+        speak("Listening sir");
         recognition.start();
     }
 });
 
 const recognition=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
 recognition.continuous=true;
+
 recognition.onresult=e=>{
     let t=e.results[e.results.length-1][0].transcript.toLowerCase();
     console.log("🎤",t);
 
-    if(t.includes("open chat")){openChat(); speak("Console open.");}
-    if(t.includes("close chat")){closeChat(); speak("Console hidden.");}
-    if(t.includes("jarvis")) speak("Online sir.");
-
     if(!t.includes("jarvis")) return;
+    t = t.replace("jarvis","").trim();
+
+    if(t.startsWith("open")) return openApp(t);
+    if(t.includes("open chat")) return openChat();
+    if(t.includes("close chat")) return closeChat();
+
+    speak("Processing sir.");
+    sendTextToAI(t);
 };
 
+async function sendTextToAI(text){
+    add(text,"user");
+    let r=await fetch(backend,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({prompt:text})
+    });
+    let d=await r.json();
+    add(d.reply,"bot");
+    speak(d.reply);
+}
 
 //=========== MATRIX BACKGROUND ==========
 function initMatrix(){
