@@ -55,15 +55,29 @@ function add(text,type){
 }
 
 
-// ================= VOICE OUTPUT =================
-function speak(txt){
-    let v = new SpeechSynthesisUtterance(txt);
-    v.pitch = .8;
-    v.rate = .9;
-    v.volume = 1;
-    speechSynthesis.speak(v);
-}
+function speak(text){
+    const utter = new SpeechSynthesisUtterance(text);
 
+    // Voice selection
+    const voices = speechSynthesis.getVoices();
+    utter.voice = voices.find(v =>
+        v.name.toLowerCase().includes("male") ||
+        v.name.toLowerCase().includes("english") ||
+        v.name.toLowerCase().includes("alex")
+    ) || voices[0];
+
+    // Robotic tone adjustments
+    utter.pitch = 0.45;   // lower tone
+    utter.rate = 0.85;      // natural speed
+    utter.volume = 1;    // max volume
+
+    // Add slight robotic artifacts
+    utter.onstart = () => {
+        // Could later add background hum fx
+    };
+
+    speechSynthesis.speak(utter);
+}
 
 // ================= SEND TO AI =================
 async function send(){
@@ -98,20 +112,28 @@ async function send(){
 sendBtn.onclick = send;
 msg.addEventListener("keypress",e=>e.key==="Enter" && send());
 
+// Wake word mode
+let listening = false;
 
-// =============== WAKE WORD / VOICE ===============
-function startWake(){
-    let R = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-    R.continuous=true;
+window.addEventListener("keydown", (e)=>{
+    if(e.key==="j"){ // quick wake
+        listening=true;
+        speak("Listening, sir.");
+    }
+});
 
-    R.onresult = e=>{
-        let t = e.results[e.resultIndex][0].transcript.toLowerCase();
-        console.log("Heard:",t);
+async function processVoiceCommand(text){
+    if(text.includes("open chat")) openChat();
+    if(text.includes("clear memory")) memory = [];
+    if(text.includes("battery")) speak("You are running 100% power, sir. Like Gojo on steroids.");
 
-        if(t.includes("jarvis")) speak("Online sir.");
-        if(t.includes("open chat")) openChat();
-        if(t.includes("close chat")) closeChat();
-        if(t.includes("send") && msg.value.trim()) send();
-    };
-    R.start();
+    // Default AI reply
+    const reply = await sendPrompt(text);
+    speak(reply);
+    display(reply);
 }
+
+// On boot auto greet
+setTimeout(()=>{
+    speak("System boot complete. Online and ready, sir.");
+},1500);
