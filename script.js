@@ -28,7 +28,7 @@ window.onload = ()=>{
     if(localStorage.getItem("auth")){
         loginScreen.style.display="none";
         dashboard.style.display="block";
-        speak("System boot sequence complete. Good morning sir.");
+        speak("System boot sequence complete. Good to see you again sir.");
         initMatrix();
     }
 };
@@ -47,7 +47,7 @@ function add(text,type){
     messages.scrollTop=messages.scrollHeight;
 }
 
-/* ================= VOICE =============== */
+/* ================= VOICE (TTS) ================= */
 function speak(text){
     speechSynthesis.cancel();
     const voices = speechSynthesis.getVoices();
@@ -64,7 +64,7 @@ function speak(text){
     speechSynthesis.speak(u);
 }
 
-/* ================= Universal OPEN commands ================= */
+/* ================= APP LINKS ================= */
 const apps={
     youtube:"https://youtube.com",
     whatsapp:"https://wa.me",
@@ -81,26 +81,28 @@ const apps={
     discord:"https://discord.com/app"
 };
 
-function openApp(name){
-    name=name.toLowerCase().replace("open ","").trim();
-    if(apps[name]){
-        speak(`Opening ${name} sir`);
-        window.open(apps[name],"_blank");
-    }else{
-        speak(`Not registered. Searching instead sir.`);
-        window.open(`https://www.google.com/search?q=${name}`,"_blank");
+/* ================= EXECUTE AI ACTIONS ================= */
+function runCommand(action,target){
+    if(action=="open" && target){
+        speak(`Opening ${target} sir`);
+        window.open(target,"_blank");
+    }
+    else if(action=="search" && target){
+        speak(`Searching sir`);
+        window.open(`https://www.google.com/search?q=${target}`,"_blank");
     }
 }
 
-/* ================= Smart Local Commands ================= */
+/* ================= LOCAL QUICK COMMANDS ================= */
 function localCommands(t){
     if(t.startsWith("open ")) return openApp(t.replace("open",""));
     if(t.startsWith("search")){ speak("Searching sir"); window.open(`https://www.google.com/search?q=${t.replace("search","")}`); return true;}
     if(t.includes("play music")){ speak("Launching music sir"); window.open("https://www.youtube.com/results?search_query=music+playlist"); return true;}
+
     if(t.includes("increase volume")){ speak("Volume increased sir"); return true;}
     if(t.includes("decrease volume")){ speak("Volume reduced sir"); return true;}
-    if(t.includes("mute")){ speak("Audio muted sir"); return true;}
-    if(t.includes("unmute")){ speak("Audio restored sir"); return true;}
+    if(t.includes("mute")){ speak("Muted sir"); return true;}
+    if(t.includes("unmute")){ speak("Volume restored"); return true;}
 
     if(t.includes("flashlight on")){ toggleTorch(true); return true;}
     if(t.includes("flashlight off")){ toggleTorch(false); return true;}
@@ -116,10 +118,10 @@ async function toggleTorch(on){
         const track=stream.getVideoTracks()[0];
         await track.applyConstraints({advanced:[{torch:on}]});
         speak(`Flashlight ${on?"activated":"disabled"} sir`);
-    }catch{ speak("Torch not supported on this device sir"); }
+    }catch{ speak("Torch not supported on your device sir"); }
 }
 
-/* ================= SEND TO BACKEND ================= */
+/* ================= SEND MESSAGE ================= */
 async function send(){
     let text=msg.value.trim();
     if(!text) return;
@@ -128,52 +130,65 @@ async function send(){
     msg.value="";
     speak("Processing sir.");
 
-    if(localCommands(text.toLowerCase())) return;
-
     try{
         let r=await fetch(backend,{
             method:"POST",
-            headers:{ "Content-Type":"application/json" },
+            headers:{ "Content-Type":"application/json"},
             body:JSON.stringify({prompt:text})
         });
+
         let data=await r.json();
         add(data.reply,"bot");
         speak(data.reply);
 
-    }catch{
+        if(data.action) runCommand(data.action,data.target);
+    }
+    catch{
         add("Connection failed 💀","bot");
-        speak("Server is unresponsive sir");
+        speak("Server not responding sir.");
     }
 }
 
 sendBtn.onclick=send;
 msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-/* ================= ALWAYS-LISTENING JARVIS MODE ================= */
+/* ================= ALWAYS LISTEN - WAKE WORD: "JARVIS" ================= */
 
-let commandMode = false;
-
+let listening = false;
 const recog=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-recog.continuous=true;
-recog.interimResults=true;
-recog.lang="en-US";
+recog.continuous=true; recog.interimResults=true; recog.lang="en-US";
 
-recog.onresult=e=>{
+recog.onresult=async e=>{
     let t=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
     console.log("🎤",t);
 
-    if(t.includes("jarvis") && !commandMode){
-        commandMode = true;
-        speak("Yes sir.");
+    if(t.includes("jarvis") && !listening){
+        listening=true;
+        speak("Yes sir?");
         return;
     }
 
-    if(commandMode){
-        if(t.includes("stop listening")){ speak("Going silent sir."); commandMode=false; return;}
-        if(localCommands(t)) { commandMode=false; return; }
+    if(listening){
+        add("🎤 "+t,"user");
+        speak("Processing sir.");
 
-        sendTextToAI(t);
-        commandMode=false;
+        try{
+            let r=await fetch(backend,{
+                method:"POST",
+                headers:{ "Content-Type":"application/json" },
+                body:JSON.stringify({prompt:t})
+            });
+            let data=await r.json();
+            add(data.reply,"bot");
+            speak(data.reply);
+
+            if(data.action) runCommand(data.action,data.target);
+        }catch{
+            add("Voice request failed.","bot");
+            speak("Connection error sir.");
+        }
+
+        listening=false;
     }
 };
 
@@ -181,20 +196,7 @@ recog.onerror=()=>recog.start();
 recog.onend=()=>recog.start();
 recog.start();
 
-/* Text to AI */
-async function sendTextToAI(text){
-    add(text,"user");
-    let r=await fetch(backend,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({prompt:text})
-    });
-    let d=await r.json();
-    add(d.reply,"bot");
-    speak(d.reply);
-}
-
-/* Background matrix */
+/* ================= BACKGROUND MATRIX ================= */
 function initMatrix(){
     const c=document.getElementById("matrix");
     const ctx=c.getContext("2d");
