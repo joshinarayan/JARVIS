@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JARVIS System</title>
+
+<!-- Future immersive UI -->
+<meta name="theme-color" content="#00ff9d">
+
 <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <!-- LOGIN SCREEN -->
@@ -22,9 +25,23 @@
 
     <canvas id="matrix"></canvas>
 
+    <!-- HUD animated ring -->
     <div id="ring"></div>
+
+    <!-- System logs for future real-time updates -->
     <div id="system-logs"></div>
-    <h2 class="title">J A R V I S  O N L I N E</h2>
+
+    <h2 class="title">J A R V I S&nbsp;&nbsp;O N L I N E</h2>
+
+    <!-- Status glow (lights when wakes to voice) -->
+    <div id="status-light"></div>
+
+    <!-- Future features placeholders -->
+    <div id="hud-container">
+        <div id="timeDisplay"></div>
+        <div id="batteryDisplay"></div>
+        <div id="weatherDisplay"></div>
+    </div>
 
     <button id="openChatBtn">☰ Chat</button>
 
