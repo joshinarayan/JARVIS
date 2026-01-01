@@ -116,12 +116,12 @@ async function toggleTorch(on){
 }
 
 /* ================= SEND MESSAGE ================= */
-async function send(){
-    let text=msg.value.trim();
+async function send(textInput=null){
+    let text = textInput || msg.value.trim();
     if(!text) return;
 
     add(text,"user");
-    msg.value="";
+    if(!textInput) msg.value="";
     speak("Processing sir.");
 
     if(localCommands(text.toLowerCase())) return;
@@ -142,7 +142,7 @@ async function send(){
     }
 }
 
-sendBtn.onclick=send;
+sendBtn.onclick=()=>send();
 msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
 /* ================= RUN ACTIONS ================= */
@@ -151,46 +151,33 @@ function runCommand(action,target){
     else if(action=="search" && target){ speak("Searching sir"); window.open(`https://www.google.com/search?q=${target}`,"_blank"); }
 }
 
-/* ================= ALWAYS-LISTENING JARVIS ================= */
+/* ================= ALWAYS-LISTENING WAKE WORD ================= */
 let listening = false;
-const recog=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-recog.continuous=true; recog.interimResults=true; recog.lang="en-US";
+const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recog.continuous = true;
+recog.interimResults = false;
+recog.lang = "en-US";
 
-recog.onresult=async e=>{
-    let t=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
-    console.log("🎤",t);
+recog.onresult = async e => {
+    let transcript = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+    console.log("🎤 Heard:", transcript);
 
-    if(t.includes("jarvis") && !listening){
-        listening=true;
+    // WAKE WORD DETECTION
+    if(!listening && transcript.includes("jarvis")){
+        listening = true;
         speak("Yes sir?");
         return;
     }
 
+    // COMMAND MODE
     if(listening){
-        add("🎤 "+t,"user");
-        speak("Processing sir.");
-
-        try{
-            let r=await fetch(backend,{
-                method:"POST",
-                headers:{ "Content-Type":"application/json" },
-                body:JSON.stringify({prompt:t})
-            });
-            let data=await r.json();
-            add(data.reply,"bot");
-            speak(data.reply);
-            if(data.action) runCommand(data.action,data.target);
-        }catch{
-            add("Voice request failed.","bot");
-            speak("Connection error sir.");
-        }
-
-        listening=false;
+        send(transcript);
+        listening = false; // reset for next wake word
     }
 };
 
-recog.onerror=()=>recog.start();
-recog.onend=()=>recog.start();
+recog.onerror = ()=> recog.start();
+recog.onend = ()=> recog.start();
 recog.start();
 
 /* ================= BACKGROUND MATRIX ================= */
@@ -205,7 +192,7 @@ function initMatrix(){
         ctx.fillRect(0,0,c.width,c.height);
         ctx.fillStyle="#00ff9d"; ctx.font=font+"px monospace";
         drops.forEach((y,i)=>{
-            ctx.fillText(chars[Math.random()*chars.length|0],i*font,y*font);
+            ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*font,y*font);
             drops[i]=(y*font>c.height&&Math.random()>0.95)?0:y+1;
         });
     },40);
