@@ -1,6 +1,6 @@
 const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-/* Elements */
+/* ================= ELEMENTS ================= */
 const loginScreen = document.getElementById("login-screen");
 const dashboard = document.getElementById("dashboard");
 const messages = document.getElementById("messages");
@@ -33,12 +33,12 @@ window.onload = ()=>{
     }
 };
 
-/* UI */
+/* ================= UI ================= */
 openChatBtn.onclick = ()=> chatPanel.style.right="0";
 function openChat(){ chatPanel.style.right="0"; }
 function closeChat(){ chatPanel.style.right="-100%"; }
 
-/* Chat rendering */
+/* ================= MESSAGE RENDER ================= */
 function add(text,type){
     let d=document.createElement("div");
     d.className="msg "+type;
@@ -47,14 +47,13 @@ function add(text,type){
     messages.scrollTop=messages.scrollHeight;
 }
 
-/* ================= VOICE (TTS) ================= */
+/* ================= VOICE ================= */
 function speak(text){
-    speechSynthesis.cancel();
+    speechSynthesis.cancel(); // Reset TTS
     const voices = speechSynthesis.getVoices();
-
     let voice = voices.find(v=>/male|david|daniel|george|alex|english|us/i.test(v.name))
-        || voices.find(v=>v.lang.includes("en"))
-        || voices[0];
+                || voices.find(v=>v.lang.includes("en"))
+                || voices[0];
 
     const u = new SpeechSynthesisUtterance(text);
     u.voice = voice;
@@ -81,36 +80,32 @@ const apps={
     discord:"https://discord.com/app"
 };
 
-/* ================= EXECUTE AI ACTIONS ================= */
-function runCommand(action,target){
-    if(action=="open" && target){
-        speak(`Opening ${target} sir`);
-        window.open(target,"_blank");
-    }
-    else if(action=="search" && target){
-        speak(`Searching sir`);
-        window.open(`https://www.google.com/search?q=${target}`,"_blank");
+function openApp(name){
+    name=name.toLowerCase().replace("open ","").trim();
+    if(apps[name]){
+        speak(`Opening ${name} sir`);
+        window.open(apps[name],"_blank");
+    }else{
+        speak(`Not registered. Searching instead sir.`);
+        window.open(`https://www.google.com/search?q=${name}`,"_blank");
     }
 }
 
-/* ================= LOCAL QUICK COMMANDS ================= */
+/* ================= LOCAL COMMANDS ================= */
 function localCommands(t){
     if(t.startsWith("open ")) return openApp(t.replace("open",""));
     if(t.startsWith("search")){ speak("Searching sir"); window.open(`https://www.google.com/search?q=${t.replace("search","")}`); return true;}
     if(t.includes("play music")){ speak("Launching music sir"); window.open("https://www.youtube.com/results?search_query=music+playlist"); return true;}
-
     if(t.includes("increase volume")){ speak("Volume increased sir"); return true;}
     if(t.includes("decrease volume")){ speak("Volume reduced sir"); return true;}
     if(t.includes("mute")){ speak("Muted sir"); return true;}
-    if(t.includes("unmute")){ speak("Volume restored"); return true;}
-
+    if(t.includes("unmute")){ speak("Volume restored sir"); return true;}
     if(t.includes("flashlight on")){ toggleTorch(true); return true;}
     if(t.includes("flashlight off")){ toggleTorch(false); return true;}
-
     return false;
 }
 
-/* Flashlight */
+/* ================= FLASHLIGHT ================= */
 let stream;
 async function toggleTorch(on){
     try{
@@ -130,13 +125,14 @@ async function send(){
     msg.value="";
     speak("Processing sir.");
 
+    if(localCommands(text.toLowerCase())) return;
+
     try{
         let r=await fetch(backend,{
             method:"POST",
             headers:{ "Content-Type":"application/json"},
             body:JSON.stringify({prompt:text})
         });
-
         let data=await r.json();
         add(data.reply,"bot");
         speak(data.reply);
@@ -152,11 +148,21 @@ async function send(){
 sendBtn.onclick=send;
 msg.addEventListener("keypress",e=>e.key==="Enter"&&send());
 
-/* ================= ALWAYS LISTEN - WAKE WORD: "JARVIS" ================= */
+/* ================= RUN COMMAND FROM BACKEND ================= */
+function runCommand(action,target){
+    if(action=="open" && target) openApp(target);
+    else if(action=="search" && target){
+        speak("Searching sir");
+        window.open(`https://www.google.com/search?q=${target}`,"_blank");
+    }
+}
 
+/* ================= ALWAYS-LISTENING "JARVIS" ================= */
 let listening = false;
 const recog=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
-recog.continuous=true; recog.interimResults=true; recog.lang="en-US";
+recog.continuous=true;
+recog.interimResults=true;
+recog.lang="en-US";
 
 recog.onresult=async e=>{
     let t=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
@@ -170,8 +176,10 @@ recog.onresult=async e=>{
 
     if(listening){
         add("🎤 "+t,"user");
-        speak("Processing sir.");
 
+        if(localCommands(t)) { listening=false; return; }
+
+        speak("Processing sir.");
         try{
             let r=await fetch(backend,{
                 method:"POST",
@@ -208,8 +216,8 @@ function initMatrix(){
         ctx.fillRect(0,0,c.width,c.height);
         ctx.fillStyle="#00ff9d"; ctx.font=font+"px monospace";
         drops.forEach((y,i)=>{
-            ctx.fillText(chars[Math.random()*chars.length|0],i*font,y*font);
-            drops[i]=(y*font>c.height&&Math.random()>0.95)?0:y+1;
+            ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*font,y*font);
+            drops[i]=(y*font>c.height && Math.random()>0.95)?0:y+1;
         });
     },40);
 }
