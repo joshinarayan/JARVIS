@@ -102,6 +102,9 @@ function localCommands(t){
     }
     return false;
 }
+document.body.addEventListener("click", ()=>{
+    speechSynthesis.getVoices(); 
+});
 
 /* ================= SEND ================= */
 async function send(textInput=null){
