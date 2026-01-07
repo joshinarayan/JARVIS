@@ -12,7 +12,17 @@
 
 <!-- Future immersive UI -->
 <meta name="theme-color" content="#00ff9d">
+<!-- TensorFlow.js Core -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0/dist/tf.min.js"></script>
 
+<!-- COCO-SSD Object Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+
+<!-- MediaPipe Hands -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
+
+<!-- Face Landmarks Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -51,7 +61,8 @@
     <button id="openChatBtn">☰ Chat</button>
 
 </div>
-
+<!-- CAMERA & HUD -->
+<div id="camera-container"></div>
 <!-- CHAT PANEL -->
 <div id="chatPanel">
 
