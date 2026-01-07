@@ -1,3 +1,4 @@
+/* ================= BACKEND ================= */
 const backend = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
 /* ================= ELEMENTS ================= */
@@ -14,7 +15,7 @@ const pass = document.getElementById("pass");
 /* ================= LOGIN ================= */
 function login(){
     if(!user.value.trim() || !pass.value.trim()){
-        alert("Enter username & password bro 😑");
+        alert("Enter username & password 😑");
         return;
     }
     localStorage.setItem("auth","yes");
@@ -22,6 +23,7 @@ function login(){
     dashboard.style.display="block";
     speak("Welcome back sir. Systems online.");
     initMatrix();
+    initCamera();
 }
 
 window.onload = ()=>{
@@ -30,6 +32,7 @@ window.onload = ()=>{
         dashboard.style.display="block";
         speak("System online. Awaiting commands sir.");
         initMatrix();
+        initCamera();
     }
 };
 
@@ -47,21 +50,16 @@ function add(text,type){
 }
 
 /* ================= TTS ================= */
-function speak(text){
+function speak(text,lang="en-US"){
     if(!text) return;
     speechSynthesis.cancel();
-
     const u=new SpeechSynthesisUtterance(text);
     const voices=speechSynthesis.getVoices();
-    u.voice =
-        voices.find(v=>/david|daniel|alex|male|english/i.test(v.name)) ||
-        voices.find(v=>v.lang.startsWith("en")) ||
-        voices[0];
-
+    u.voice = voices.find(v=>/david|daniel|alex|male|english/i.test(v.name)) || voices[0];
     u.rate=0.85;
     u.pitch=0.5;
     u.volume=1;
-
+    u.lang = lang;
     speechSynthesis.speak(u);
 }
 
@@ -76,7 +74,6 @@ const apps={
     amazon:"https://amazon.in",
     discord:"https://discord.com/app"
 };
-
 function openApp(name){
     name=name.replace("open","").trim();
     if(apps[name]){
@@ -102,9 +99,6 @@ function localCommands(t){
     }
     return false;
 }
-document.body.addEventListener("click", ()=>{
-    speechSynthesis.getVoices(); 
-});
 
 /* ================= SEND ================= */
 async function send(textInput=null){
@@ -149,7 +143,6 @@ function runCommand(action,target){
 /* ================= VOICE AI ================= */
 const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recog = new SpeechAPI();
-
 recog.lang="en-US";
 recog.continuous=true;
 recog.interimResults=false;
@@ -183,8 +176,8 @@ recog.onresult = e=>{
     }
 };
 
-recog.onerror=()=>setTimeout(()=>recog.start(),800);
-recog.onend=()=>setTimeout(()=>recog.start(),500);
+recog.onerror = ()=>setTimeout(()=>recog.start(),800);
+recog.onend = ()=>setTimeout(()=>recog.start(),500);
 recog.start();
 
 /* ================= MATRIX ================= */
@@ -203,8 +196,81 @@ function initMatrix(){
         ctx.fillStyle="#00ff9d";
         ctx.font=font+"px monospace";
         drops.forEach((y,i)=>{
-            ctx.fillText(chars[Math.random()*chars.length|0],i*font,y*font);
+            ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*font,y*font);
             drops[i]=(y*font>c.height&&Math.random()>0.95)?0:y+1;
         });
     },35);
+}
+
+/* ================= CAMERA & AI HUD ================= */
+let video, canvas, ctx2, modelHand, modelObject;
+async function initCamera(){
+    video = document.createElement("video");
+    video.width=640; video.height=480;
+    video.style.position="absolute";
+    video.style.top="10px";
+    video.style.left="10px";
+    video.style.zIndex="10";
+    dashboard.appendChild(video);
+
+    canvas = document.createElement("canvas");
+    canvas.width = video.width;
+    canvas.height = video.height;
+    canvas.style.position="absolute";
+    canvas.style.top="10px";
+    canvas.style.left="10px";
+    canvas.style.zIndex="20";
+    dashboard.appendChild(canvas);
+    ctx2 = canvas.getContext("2d");
+
+    // Start webcam
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+
+    // Load TensorFlow.js models
+    modelHand = await handPoseModel(); // MediaPipe Hands
+    modelObject = await cocoSsd.load(); // COCO-SSD
+    detectLoop();
+}
+
+// Load MediaPipe Hands
+async function handPoseModel(){
+    return await handpose.load();
+}
+
+// Detection loop
+async function detectLoop(){
+    if(video.readyState >= 2){
+        ctx2.drawImage(video,0,0,canvas.width,canvas.height);
+
+        // HANDS
+        const hands = await modelHand.estimateHands(video);
+        hands.forEach(hand=>{
+            const landmarks = hand.landmarks;
+            ctx2.strokeStyle="lime";
+            ctx2.lineWidth=2;
+            for(let i=0;i<landmarks.length;i++){
+                ctx2.beginPath();
+                ctx2.arc(landmarks[i][0],landmarks[i][1],5,0,2*Math.PI);
+                ctx2.stroke();
+            }
+            ctx2.fillStyle="lime";
+            ctx2.font="16px monospace";
+            ctx2.fillText(`Fingers: ${hand.annotations.thumb.length + hand.annotations.indexFinger.length + hand.annotations.middleFinger.length + hand.annotations.ringFinger.length + hand.annotations.pinky.length}`, landmarks[0][0], landmarks[0][1]-10);
+        });
+
+        // OBJECTS
+        const predictions = await modelObject.detect(video);
+        predictions.forEach(p=>{
+            ctx2.strokeStyle="red";
+            ctx2.lineWidth=2;
+            ctx2.strokeRect(p.bbox[0],p.bbox[1],p.bbox[2],p.bbox[3]);
+            ctx2.fillStyle="red";
+            ctx2.fillText(p.class, p.bbox[0], p.bbox[1]-5);
+        });
+    }
+    requestAnimationFrame(detectLoop);
 }
