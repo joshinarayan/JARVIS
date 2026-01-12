@@ -3,78 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JARVIS System</title>
+<title>JARVIS SYSTEM</title>
+
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#00ff9c">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-<!-- Future immersive UI -->
-<meta name="theme-color" content="#00ff9d">
-<!-- TensorFlow.js Core -->
+<!-- AI MODELS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
 
-<!-- COCO-SSD Object Detection -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
-
-<!-- MediaPipe Hands -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
-
-<!-- Face Landmarks Detection -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.2/dist/face-landmarks-detection.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- LOGIN SCREEN -->
-<div id="login-screen" class="center">
+<!-- LOGIN -->
+<div id="login-screen">
     <h1>JARVIS ACCESS</h1>
     <input id="user" placeholder="Username">
     <input id="pass" placeholder="Password" type="password">
     <button onclick="login()">Authorize</button>
 </div>
 
-<!-- MAIN DASHBOARD -->
+<!-- DASHBOARD -->
 <div id="dashboard">
 
     <canvas id="matrix"></canvas>
 
-    <!-- HUD animated ring -->
-    <div id="ring"></div>
-
-    <!-- System logs for future real-time updates -->
-    <div id="system-logs"></div>
-
-    <h2 class="title">J A R V I S&nbsp;&nbsp;O N L I N E</h2>
-
-    <!-- Status glow (lights when wakes to voice) -->
-    <div id="status-light"></div>
-
-    <!-- Future features placeholders -->
-    <div id="hud-container">
-        <div id="timeDisplay"></div>
-        <div id="batteryDisplay"></div>
-        <div id="weatherDisplay"></div>
+    <!-- HUD -->
+    <div id="hud">
+        <div id="ring-main"></div>
+        <div id="ring-inner"></div>
+        <div id="status">FACE LOCK: ❌</div>
     </div>
 
-    <button id="openChatBtn">☰ Chat</button>
+    <button id="openChatBtn">☰</button>
 
 </div>
-<!-- CAMERA & HUD -->
-<div id="camera-container"></div>
-<!-- CHAT PANEL -->
+
+<!-- CHAT -->
 <div id="chatPanel">
-
-    <div id="chatHeader">JARVIS Console</div>
-
     <div id="messages"></div>
-
-    <div id="chatInput">
-        <input id="msg" placeholder="Speak or type command...">
-        <button id="send">➤</button>
-    </div>
-
+    <input id="msg" placeholder="Speak or type command">
+    <button id="send">➤</button>
 </div>
 
 <script src="script.js"></script>
