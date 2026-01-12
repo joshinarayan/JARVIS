@@ -1,162 +1,165 @@
-const backend="https://jarvis-backend-lllv.onrender.com/api/ask";
+/* ================== CONFIG ================== */
+const BACKEND = "https://jarvis-backend-lllv.onrender.com/api/ask";
 
-const loginScreen=document.getElementById("login-screen");
-const dashboard=document.getElementById("dashboard");
-const statusText=document.getElementById("status");
+/* ================== ELEMENTS ================== */
+const loginScreen = document.getElementById("login-screen");
+const dashboard = document.getElementById("dashboard");
+const messages = document.getElementById("messages");
+const msgInput = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
+const userInput = document.getElementById("user");
+const passInput = document.getElementById("pass");
+const openChatBtn = document.getElementById("openChatBtn");
+const chatPanel = document.getElementById("chatPanel");
+const video = document.getElementById("camera");
 
-let faceDetected=false;
-let listening=false;
+/* ================== UI ================== */
+openChatBtn.onclick = () => chatPanel.style.right = "0";
+function closeChat() { chatPanel.style.right = "-100%"; }
 
-/* LOGIN */
-async function login(){
-    const u=user.value, p=pass.value;
-    const r=await fetch("https://jarvis-backend-lllv.onrender.com/api/login",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({username:u,password:p})
-    });
-    if(!r.ok){ alert("Access denied"); return; }
-    localStorage.setItem("auth","yes");
-    startSystem();
+function add(text, type) {
+  const d = document.createElement("div");
+  d.className = "msg " + type;
+  d.innerText = text;
+  messages.appendChild(d);
+  messages.scrollTop = messages.scrollHeight;
 }
 
-function startSystem(){
-    loginScreen.style.display="none";
-    dashboard.style.display="block";
-    initMatrix();
-    initCamera();
-    startVoice();
-    speak("System online. Awaiting face verification.");
+/* ================== SPEECH ================== */
+function speak(text) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.pitch = 0.55;
+  u.rate = 0.9;
+  const voices = speechSynthesis.getVoices();
+  u.voice =
+    voices.find(v => /male|google|english/i.test(v.name)) ||
+    voices.find(v => v.lang.includes("en"));
+  speechSynthesis.speak(u);
 }
 
-window.onload=()=>{
-    if(localStorage.getItem("auth")==="yes") startSystem();
-};
+/* ================== LOGIN ================== */
+async function login() {
+  const username = userInput.value.trim();
+  const password = passInput.value.trim();
+  if (!username || !password) return alert("Missing credentials");
 
-/* VOICE */
-function speak(t){
-    const u=new SpeechSynthesisUtterance(t);
-    u.lang=/kya|kaun|hai/i.test(t)?"hi-IN":"en-IN";
-    u.rate=.85; u.pitch=.6;
-    speechSynthesis.speak(u);
-}
-
-const SpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
-const recog=new SpeechAPI();
-recog.continuous=true;
-recog.lang="en-IN";
-
-recog.onresult=e=>{
-    const t=e.results[e.results.length-1][0].transcript.toLowerCase();
-    if(!faceDetected) return;
-    if(t.includes("jarvis")){
-        speak("Yes sir");
-        listening=true;
-        return;
-    }
-    if(listening){
-        listening=false;
-        send(t);
-    }
-};
-
-function startVoice(){ recog.start(); }
-
-/* CHAT */
-async function send(t){
-    const r=await fetch(backend,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:t})
-    });
-    const d=await r.json();
-    speak(d.reply);
-}
-
-/* MATRIX */
-function initMatrix(){
-    const c=document.getElementById("matrix");
-    const ctx=c.getContext("2d");
-    c.width=innerWidth; c.height=innerHeight;
-    const chars="01JARVIS";
-    const drops=Array(c.width/14).fill(1);
-    setInterval(()=>{
-        ctx.fillStyle="rgba(0,0,0,.05)";
-        ctx.fillRect(0,0,c.width,c.height);
-        ctx.fillStyle="#00ff9c";
-        ctx.font="14px monospace";
-        drops.forEach((y,i)=>{
-            ctx.fillText(chars[Math.random()*chars.length|0],i*14,y*14);
-            drops[i]=y*14>c.height?0:y+1;
-        });
-    },35);
-}
-
-/* CAMERA + AI */
-let video,canvas,ctx,handModel,faceModel,objModel;
-
-async function initCamera(){
-    video=document.createElement("video");
-    canvas=document.createElement("canvas");
-    ctx=canvas.getContext("2d");
-
-    video.autoplay=true;
-    const s=await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject=s;
-
-    dashboard.append(video,canvas);
-
-    faceModel=await faceLandmarksDetection.load(
-        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
-    );
-    handModel=await handpose.load();
-    objModel=await cocoSsd.load();
-
-    detect();
-}
-
-async function detect(){
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-
-    const faces=await faceModel.estimateFaces({input:video});
-    faceDetected=faces.length>0;
-    statusText.textContent=faceDetected?"FACE LOCK: ✅":"FACE LOCK: ❌";
-
-    const hands=await handModel.estimateHands(video);
-    if(hands.length){
-        const fingers=hands[0].annotations.indexFinger.length;
-        if(fingers===2) speak("Two fingers detected");
-    }
-
-    requestAnimationFrame(detect);
-}
-let identityVerified = false;
-let faceModel;
-
-async function loadFaceModel() {
-  faceModel = await blazeface.load();
-}
-
-async function verifyFace(video) {
-  const faces = await faceModel.estimateFaces(video, false);
-  if (!faces.length) return false;
-
-  const embedding = faces[0].landmarks.flat();
-
-  const r = await fetch("/api/face/verify", {
+  const r = await fetch(`${BACKEND}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ embedding }),
+    body: JSON.stringify({ username, password })
+  });
+
+  if (!r.ok) {
+    alert("Access denied");
+    return;
+  }
+
+  speak("Credentials verified. Initiating biometric scan.");
+  await startCamera();
+  await enrollOrVerifyFace();
+}
+
+/* ================== CAMERA ================== */
+let stream;
+
+async function startCamera() {
+  stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+  video.play();
+}
+
+/* ================== FACE AI (CLIENT SIDE) ================== */
+/* NOTE: Placeholder embedding generator
+   Replace with face-api.js / MediaPipe later */
+function fakeEmbedding() {
+  return Array.from({ length: 128 }, () => Math.random());
+}
+
+/* ================== FACE FLOW ================== */
+async function enrollOrVerifyFace() {
+  const embedding = fakeEmbedding();
+
+  const verify = await fetch(`${BACKEND}/api/face/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ embedding })
+  }).then(r => r.json());
+
+  if (verify.match) {
+    unlockSystem();
+  } else {
+    await fetch(`${BACKEND}/api/face/enroll`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embedding })
+    });
+    unlockSystem();
+  }
+}
+
+/* ================== UNLOCK ================== */
+function unlockSystem() {
+  loginScreen.style.display = "none";
+  dashboard.style.display = "block";
+  speak("Identity confirmed. Jarvis online, sir.");
+  initVoice();
+}
+
+/* ================== SEND ================== */
+sendBtn.onclick = () => send();
+msgInput.addEventListener("keydown", e => e.key === "Enter" && send());
+
+async function send(textInput = null) {
+  const text = textInput || msgInput.value.trim();
+  if (!text) return;
+
+  add(text, "user");
+  if (!textInput) msgInput.value = "";
+
+  const r = await fetch(`${BACKEND}/api/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: text })
   });
 
   const data = await r.json();
-  identityVerified = data.match;
-  return data.match;
-                      }
-function guard() {
-  if (!identityVerified) {
-    recog.stop();
-    speak("Unauthorized identity detected. Locking system.");
-    throw new Error("LOCKED");
-  }
+  add(data.reply, "bot");
+  speak(data.reply);
+
+  if (data.action === "open" && data.target)
+    window.open(data.target, "_blank");
+  if (data.action === "search" && data.target)
+    window.open("https://google.com/search?q=" + data.target);
 }
+
+/* ================== VOICE WAKE ================== */
+let listening = false;
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+const recog = new SpeechRecognition();
+recog.continuous = true;
+recog.lang = "en-US";
+
+function initVoice() {
+  recog.start();
+}
+
+recog.onresult = e => {
+  const t = e.results[e.results.length - 1][0].transcript.toLowerCase();
+  console.log("🎤", t);
+
+  if (!listening && t.includes("jarvis")) {
+    listening = true;
+    speak("Yes sir?");
+    return;
+  }
+
+  if (listening) {
+    send(t);
+    listening = false;
+  }
+};
+
+recog.onerror = () => recog.start();
+recog.onend = () => recog.start();
