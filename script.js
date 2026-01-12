@@ -130,3 +130,33 @@ async function detect(){
 
     requestAnimationFrame(detect);
 }
+let identityVerified = false;
+let faceModel;
+
+async function loadFaceModel() {
+  faceModel = await blazeface.load();
+}
+
+async function verifyFace(video) {
+  const faces = await faceModel.estimateFaces(video, false);
+  if (!faces.length) return false;
+
+  const embedding = faces[0].landmarks.flat();
+
+  const r = await fetch("/api/face/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ embedding }),
+  });
+
+  const data = await r.json();
+  identityVerified = data.match;
+  return data.match;
+                      }
+function guard() {
+  if (!identityVerified) {
+    recog.stop();
+    speak("Unauthorized identity detected. Locking system.");
+    throw new Error("LOCKED");
+  }
+}
