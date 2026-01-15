@@ -270,15 +270,3 @@ async function send(textOverride) {
 }
 window.login = login;
 window.closeChat = closeChat;
-const video = document.getElementById("camera");
-
-// after getUserMedia succeeds
-video.style.display = "block";
-video.style.position = "absolute";
-video.style.top = "10px";
-video.style.right = "10px";
-video.style.width = "160px";
-video.style.border = "2px solid #00ff9c";
-video.style.borderRadius = "8px";
-video.style.boxShadow = "0 0 20px #00ff9c";
-
