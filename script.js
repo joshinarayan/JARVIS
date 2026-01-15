@@ -1,6 +1,6 @@
 /* ================== CONFIG ================== */
 const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com"; 
-const ELEVENLABS_API_KEY = "YOUR_ELEVENLABS_API_KEY"; // Put your key here
+const ELEVENLABS_API_KEY = "sk_b9b13e73f1f4bab9ac6fc3005b246530571a6409ffd5250b"; // Put your key here
 const ELEVENLABS_VOICE_ID = "yrT1876dlfqwBq29bT4p"; // Jarvis deep male voice
 
 /* ================== ELEMENTS ================== */
