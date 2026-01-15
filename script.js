@@ -1,7 +1,7 @@
 /* ================== CONFIG ================== */
 const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com"; 
-const ELEVENLABS_API_KEY = "sk_fd19703e1e9f079b0d8e281b080fdec5d30c3d56152723c3"; // Put your key here
-const ELEVENLABS_VOICE_ID = "yrT1876dlfqwBq29bT4p"; // Jarvis deep male voice
+const ELEVENLABS_API_KEY = "sk_fd19703e1e9f079b0d8e281b080fdec5d30c3d56152723c3"; // Put your ElevenLabs key here
+const ELEVENLABS_VOICE_ID = "yrT1876dlfqwBq29bT4p"; // Deep male voice for Jarvis
 
 /* ================== ELEMENTS ================== */
 const loginScreen = document.getElementById("login-screen");
@@ -69,7 +69,6 @@ function startMatrix() {
 async function login() {
     const username = userInput.value.trim();
     const password = passInput.value.trim();
-
     if (!username || !password) return alert("CREDENTIALS REQUIRED");
 
     document.getElementById("loading-text").style.display = "block";
@@ -88,7 +87,7 @@ async function login() {
             return;
         }
 
-        speak("Password accepted. Initializing optical sensors.", true);
+        await speak("Password accepted. Initializing optical sensors.", true);
         loginScreen.style.display = "none";
         dashboard.style.display = "block";
 
@@ -152,7 +151,7 @@ async function performBiometricAuth() {
     if (window.isAuthProcessing) return;
     window.isAuthProcessing = true;
 
-    speak("Face detected. Verifying biometrics.", true);
+    await speak("Face detected. Verifying biometrics.", true);
     hudStatus.innerText = "VERIFYING...";
 
     const embedding = Array.from({ length: 128 }, () => Math.random());
@@ -175,7 +174,7 @@ async function performBiometricAuth() {
 
         window.isUnlocked = true;
         hudStatus.innerText = "SYSTEM ONLINE";
-        speak("Welcome back, sir. Systems are ready.", true);
+        await speak("Welcome back, sir. Systems are ready.", true);
         initVoice();
 
     } catch (e) {
@@ -186,9 +185,9 @@ async function performBiometricAuth() {
 
 /* ================== VOICE & CHAT ================== */
 async function speak(text, useElevenLabs = false) {
-    if (useElevenLabs) {
+    if (useElevenLabs && ELEVENLABS_API_KEY) {
         try {
-            const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + ELEVENLABS_VOICE_ID, {
+            const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
                 method: "POST",
                 headers: {
                     "xi-api-key": ELEVENLABS_API_KEY,
@@ -198,19 +197,24 @@ async function speak(text, useElevenLabs = false) {
             });
             const blob = await r.blob();
             const audio = new Audio(URL.createObjectURL(blob));
-            audio.play();
+            await audio.play();
         } catch (e) {
             console.error("ElevenLabs TTS Error:", e);
+            speakFallback(text);
         }
     } else {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 1;
-        u.pitch = 0.8;
-        const voices = window.speechSynthesis.getVoices();
-        u.voice = voices.find(v => v.name.includes("Google US English")) || voices[0];
-        window.speechSynthesis.speak(u);
+        speakFallback(text);
     }
+}
+
+function speakFallback(text) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1;
+    u.pitch = 0.8;
+    const voices = window.speechSynthesis.getVoices();
+    u.voice = voices.find(v => v.name.includes("Google US English")) || voices[0];
+    window.speechSynthesis.speak(u);
 }
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
