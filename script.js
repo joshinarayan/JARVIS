@@ -268,3 +268,6 @@ async function send(textOverride) {
         addMessage("Error: " + e.message, "bot");
     }
 }
+window.login = login;
+window.closeChat = closeChat;
+
