@@ -270,7 +270,3 @@ async function send(textOverride) {
 }
 window.login = login;
 window.closeChat = closeChat;
-body: JSON.stringify({
-  prompt: text,
-  localTime: new Date().toLocaleString()
-})
