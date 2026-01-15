@@ -1,91 +1,181 @@
-body{
-    margin:0;
-    background:black;
-    color:#00ff9c;
-    font-family:consolas,monospace;
-    overflow:hidden;
+body {
+    margin: 0;
+    background: black;
+    color: #00ff9c;
+    font-family: "Consolas", "Courier New", monospace;
+    overflow: hidden;
+    user-select: none;
 }
 
-#login-screen{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    gap:10px;
+/* --- LOGIN --- */
+#login-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    background: radial-gradient(circle, #001a10 0%, #000000 90%);
+    z-index: 100;
 }
 
-input,button{
-    padding:10px;
-    background:black;
-    color:#00ff9c;
-    border:1px solid #00ff9c;
+input, button {
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ff9c;
+    border: 1px solid #00ff9c;
+    font-family: inherit;
+    font-size: 16px;
+    outline: none;
+    width: 250px;
+    text-align: center;
+    transition: 0.3s;
 }
 
-#dashboard{
-    display:none;
-    width:100vw;
-    height:100vh;
+button:hover {
+    background: #00ff9c;
+    color: black;
+    cursor: pointer;
+    box-shadow: 0 0 15px #00ff9c;
 }
 
-#matrix{
-    position:absolute;
-    width:100%;
-    height:100%;
-    opacity:0.25;
+/* --- DASHBOARD --- */
+#dashboard {
+    display: none;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
 }
 
-#hud{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
+#matrix {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0.3;
 }
 
-#ring-main{
-    width:320px;
-    height:320px;
-    border:3px solid #00ff9c;
-    border-radius:50%;
-    animation:spin 8s linear infinite;
-    box-shadow:0 0 40px #00ff9c;
+/* --- HUD --- */
+#hud {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    pointer-events: none; /* Let clicks pass through */
 }
 
-#ring-inner{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:200px;
-    height:200px;
-    border:2px dashed #00ff9c;
-    border-radius:50%;
-    animation:spinReverse 6s linear infinite;
+#ring-main {
+    width: 300px;
+    height: 300px;
+    border: 4px solid rgba(0, 255, 156, 0.3);
+    border-top: 4px solid #00ff9c;
+    border-radius: 50%;
+    animation: spin 4s linear infinite;
+    box-shadow: 0 0 20px rgba(0, 255, 156, 0.2);
 }
 
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes spinReverse{to{transform:rotate(-360deg)}}
-
-#status{
-    position:absolute;
-    top:110%;
-    width:100%;
-    text-align:center;
-    font-size:14px;
+#ring-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    border: 2px dashed rgba(0, 255, 156, 0.6);
+    border-radius: 50%;
+    animation: spinReverse 8s linear infinite;
 }
 
-#chatPanel{
-    position:absolute;
-    right:-100%;
-    width:80%;
-    height:100%;
-    background:rgba(0,0,0,.9);
-    transition:.6s;
+#status {
+    position: absolute;
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 5px #00ff9c;
+    white-space: nowrap;
 }
 
-#openChatBtn{
-    position:absolute;
-    bottom:20px;
-    right:20px;
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+
+/* --- CHAT --- */
+#chatPanel {
+    position: absolute;
+    top: 0;
+    right: -100%;
+    width: 400px;
+    max-width: 90%;
+    height: 100%;
+    background: rgba(0, 10, 5, 0.95);
+    border-left: 1px solid #00ff9c;
+    transition: 0.4s ease-out;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+}
+
+.chat-header {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.msg {
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.msg.user {
+    align-self: flex-end;
+    background: rgba(0, 255, 156, 0.1);
+    border: 1px solid #00ff9c;
+    color: #00ff9c;
+}
+
+.msg.bot {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #555;
+    color: #ddd;
+}
+
+.input-area {
+    padding: 15px;
+    display: flex;
+    gap: 5px;
+    border-top: 1px solid #333;
+}
+
+#msg { width: 100%; }
+#send { width: auto; }
+
+#openChatBtn {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    z-index: 20;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 20px;
 }
