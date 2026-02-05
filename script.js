@@ -1,7 +1,7 @@
 /* ================== CONFIG ================== */
 
 const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com";
-
+const labBtn = document.getElementById("labBtn");
 const ELEVENLABS_API_KEY = "LABS_API_KEY"; // Put real key later
 const ELEVENLABS_VOICE_ID = "yrT1876dlfqwBq29bT4p";
 
@@ -458,7 +458,11 @@ msgInput.addEventListener("keydown", e => {
     if (e.key === "Enter") send();
 });
 
-
+if (labBtn) {
+    labBtn.onclick = () => {
+        window.open("gesture.html", "_blank");
+    };
+}
 async function send(textOverride) {
 
     const text =
