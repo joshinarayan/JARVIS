@@ -24,6 +24,7 @@ const video = document.getElementById("camera");
 
 const hudStatus = document.getElementById("status");
 const hudRing = document.getElementById("ring-main");
+const openGestureBtn = document.getElementById("openGestureBtn");
 
 let isListening = false;
 
@@ -46,7 +47,11 @@ function addMessage(text, type) {
 document.getElementById("openChatBtn").onclick = () => {
     chatPanel.style.right = "0";
 };
-
+if (openGestureBtn) {
+    openGestureBtn.onclick = () => {
+        window.open("gesture.html", "_blank");
+    };
+}
 function closeChat() {
     chatPanel.style.right = "-100%";
 }
