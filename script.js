@@ -94,7 +94,9 @@ function startVoiceOnce() {
     }
 }
 
-
+document.getElementById("openGestureBtn").onclick = () => {
+    window.open("gesture.html", "_blank");
+};
 /* ---------- HANDLE VOICE ---------- */
 
 recog.onresult = async (event) => {
