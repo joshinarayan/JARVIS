@@ -1,94 +1,57 @@
 const video = document.getElementById("cam");
-const canvas = document.getElementById("ui");
-const ctx = canvas.getContext("2d");
-const status = document.getElementById("status");
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const hud = document.getElementById("hud");
 
 
-/* ================= CAMERA ================= */
+/* CAMERA */
 
-async function startCam() {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-    });
-
+navigator.mediaDevices.getUserMedia({
+    video:true
+})
+.then(stream=>{
     video.srcObject = stream;
+})
+.catch(err=>{
+    alert("Camera Error: "+err);
+});
 
-    return new Promise(r => {
-        video.onloadedmetadata = r;
-    });
-}
 
-
-/* ================= HAND AI ================= */
+/* HAND TRACKING */
 
 const hands = new Hands({
     locateFile: file =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
 });
 
 hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.7
+  maxNumHands: 2,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7
 });
 
-hands.onResults(drawHands);
 
+hands.onResults(results=>{
 
-/* ================= DRAW ================= */
+    if(results.multiHandLandmarks.length > 0){
 
-function drawHands(results) {
+        hud.innerHTML = "✋ Hand Detected<br>Builder Ready";
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }else{
 
-    if (!results.multiHandLandmarks) {
-        status.innerText = "NO HAND";
-        return;
+        hud.innerHTML = "Waiting for hands...";
     }
 
-    status.innerText = "HAND DETECTED";
-
-    for (const hand of results.multiHandLandmarks) {
-
-        for (const p of hand) {
-
-            const x = p.x * canvas.width;
-            const y = p.y * canvas.height;
-
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = "#00ff9c";
-            ctx.fill();
-        }
-    }
-}
+});
 
 
-/* ================= START ================= */
+/* CAMERA PIPE */
 
-async function boot() {
+const camera = new Camera(video,{
+    onFrame: async ()=>{
+        await hands.send({image:video});
+    },
+    width:640,
+    height:480
+});
 
-    status.innerText = "STARTING CAMERA...";
-
-    await startCam();
-
-    status.innerText = "LOADING AI...";
-
-    const cam = new Camera(video, {
-        onFrame: async () => {
-            await hands.send({ image: video });
-        },
-        width: 1280,
-        height: 720
-    });
-
-    cam.start();
-
-    status.innerText = "READY";
-}
-
-boot();
+camera.start();
