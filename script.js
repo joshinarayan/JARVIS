@@ -225,9 +225,7 @@ async function send(textOverride) {
         speak("Network problem, sir.", false);
     }
 }
-document.getElementById("openGestureBtn").onclick = () => {
-    window.open("gesture.html", "_blank");
-};
+
 
 
 /* ================== EXPORT ================== */
