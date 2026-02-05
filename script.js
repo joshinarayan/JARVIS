@@ -1,16 +1,297 @@
-/* ================== VOICE & CHAT ================== */
+/* ================== CONFIG ================== */
+
+const BACKEND_URL = "https://jarvis-backend-lllv.onrender.com";
+
+const ELEVENLABS_API_KEY = "LABS_API_KEY"; // Put real key later
+const ELEVENLABS_VOICE_ID = "yrT1876dlfqwBq29bT4p";
+
+
+/* ================== ELEMENTS ================== */
+
+const loginScreen = document.getElementById("login-screen");
+const dashboard = document.getElementById("dashboard");
+
+const messages = document.getElementById("messages");
+const msgInput = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
+
+const userInput = document.getElementById("user");
+const passInput = document.getElementById("pass");
+
+const chatPanel = document.getElementById("chatPanel");
+
+const video = document.getElementById("camera");
+
+const hudStatus = document.getElementById("status");
+const hudRing = document.getElementById("ring-main");
 
 let isListening = false;
 
-/* ---------- SPEAK ---------- */
+
+/* ================== CHAT UI ================== */
+
+function addMessage(text, type) {
+
+    const d = document.createElement("div");
+
+    d.className = "msg " + type;
+    d.innerText = text;
+
+    messages.appendChild(d);
+
+    messages.scrollTop = messages.scrollHeight;
+}
+
+
+document.getElementById("openChatBtn").onclick = () => {
+    chatPanel.style.right = "0";
+};
+
+function closeChat() {
+    chatPanel.style.right = "-100%";
+}
+
+
+/* ================== MATRIX ================== */
+
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+function startMatrix() {
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const katakana =
+        "アァカサタナハマヤャラワガザダバパイィキシチニヒミリ";
+
+    const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const nums = "01010101";
+
+    const alphabet = katakana + latin + nums;
+
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+
+    const rainDrops = Array(Math.floor(columns)).fill(1);
+
+    function draw() {
+
+        ctx.fillStyle = "rgba(0,0,0,0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#00ff9c";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < rainDrops.length; i++) {
+
+            const text =
+                alphabet.charAt(
+                    Math.floor(Math.random() * alphabet.length)
+                );
+
+            ctx.fillText(
+                text,
+                i * fontSize,
+                rainDrops[i] * fontSize
+            );
+
+            if (
+                rainDrops[i] * fontSize > canvas.height &&
+                Math.random() > 0.975
+            ) {
+                rainDrops[i] = 0;
+            }
+
+            rainDrops[i]++;
+        }
+    }
+
+    setInterval(draw, 30);
+}
+
+
+/* ================== LOGIN ================== */
+
+async function login() {
+
+    const username = userInput.value.trim();
+    const password = passInput.value.trim();
+
+    if (!username || !password) {
+        alert("ENTER USERNAME & PASSWORD");
+        return;
+    }
+
+    document.getElementById("loading-text").style.display = "block";
+
+    try {
+
+        const r = await fetch(`${BACKEND_URL}/api/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await r.json();
+
+        if (!data.ok) {
+
+            alert("ACCESS DENIED");
+
+            document.getElementById("loading-text").style.display = "none";
+
+            return;
+        }
+
+        // SUCCESS
+        loginScreen.style.display = "none";
+        dashboard.style.display = "block";
+
+        document.getElementById("loading-text").style.display = "none";
+
+        startMatrix();
+
+        await startCamera();
+
+        startFaceDetection();
+
+    } catch (e) {
+
+        alert("SERVER ERROR: " + e.message);
+
+        document.getElementById("loading-text").style.display = "none";
+    }
+}
+
+
+/* ================== CAMERA ================== */
+
+async function startCamera() {
+
+    try {
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        video.style.display = "block";
+
+        return new Promise(resolve => {
+            video.onloadedmetadata = () => resolve(video);
+        });
+
+    } catch (e) {
+
+        alert("CAMERA ERROR: " + e.message);
+    }
+}
+
+
+/* ================== FACE ================== */
+
+async function startFaceDetection() {
+
+    hudStatus.innerText = "LOADING AI...";
+
+    const model = await blazeface.load();
+
+    hudStatus.innerText = "SCANNING...";
+
+    setInterval(async () => {
+
+        const predictions =
+            await model.estimateFaces(video, false);
+
+        if (predictions.length > 0) {
+
+            hudRing.style.borderColor = "#00ff9c";
+
+            hudStatus.innerText = "USER DETECTED";
+
+            if (!window.isUnlocked) {
+                performBiometricAuth();
+            }
+
+        } else {
+
+            hudRing.style.borderColor = "red";
+
+            hudStatus.innerText = "NO SUBJECT";
+        }
+
+    }, 500);
+}
+
+
+async function performBiometricAuth() {
+
+    if (window.isAuthProcessing) return;
+
+    window.isAuthProcessing = true;
+
+    await speak("Verifying biometrics, sir.", true);
+
+    hudStatus.innerText = "VERIFYING...";
+
+    const embedding =
+        Array.from({ length: 128 }, () => Math.random());
+
+    try {
+
+        let r = await fetch(`${BACKEND_URL}/api/face/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ embedding })
+        });
+
+        let data = await r.json();
+
+        if (!data.match) {
+
+            await fetch(`${BACKEND_URL}/api/face/enroll`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ embedding })
+            });
+        }
+
+        window.isUnlocked = true;
+
+        hudStatus.innerText = "SYSTEM ONLINE";
+
+        await speak("Welcome back, sir.", true);
+
+        initVoice();
+
+    } catch (e) {
+
+        console.error("Face error:", e);
+
+        window.isAuthProcessing = false;
+    }
+}
+
+
+/* ================== SPEAK ================== */
 
 async function speak(text, useElevenLabs = false) {
+
     if (!text) return;
 
     window.speechSynthesis.cancel();
 
-    if (useElevenLabs && ELEVENLABS_API_KEY && ELEVENLABS_API_KEY !== "LABS_API_KEY") {
+    if (
+        useElevenLabs &&
+        ELEVENLABS_API_KEY &&
+        ELEVENLABS_API_KEY !== "LABS_API_KEY"
+    ) {
+
         try {
+
             const r = await fetch(
                 `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
                 {
@@ -30,80 +311,86 @@ async function speak(text, useElevenLabs = false) {
             );
 
             const blob = await r.blob();
-            const audio = new Audio(URL.createObjectURL(blob));
+
+            const audio =
+                new Audio(URL.createObjectURL(blob));
+
             await audio.play();
+
             return;
 
         } catch (e) {
-            console.warn("ElevenLabs failed → fallback", e);
+
+            console.warn("ElevenLabs fail:", e);
         }
     }
 
-    // Fallback TTS
+    // Fallback
+
     const u = new SpeechSynthesisUtterance(text);
+
     u.lang = "en-IN";
     u.rate = 1;
     u.pitch = 0.9;
 
     const voices = speechSynthesis.getVoices();
-    u.voice = voices.find(v => v.lang === "en-IN") || voices[0];
+
+    u.voice =
+        voices.find(v => v.lang === "en-IN") || voices[0];
 
     speechSynthesis.speak(u);
 }
 
 
-/* ---------- SPEECH RECOGNITION ---------- */
+/* ================== VOICE ================== */
 
 const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
-if (!SpeechRecognition) {
-    alert("Speech Recognition not supported on this browser");
-}
-
 const recog = new SpeechRecognition();
 
-// IMPORTANT SETTINGS
 recog.lang = "en-IN";
-recog.continuous = false;       // more stable
+recog.continuous = false;
 recog.interimResults = false;
 
-
-/* ---------- START LISTENING (USER CLICK REQUIRED) ---------- */
 
 function initVoice() {
 
     if (isListening) return;
 
-    // Ask permission by user click
-    document.body.addEventListener("click", startVoiceOnce, { once: true });
+    document.body.addEventListener(
+        "click",
+        startVoiceOnce,
+        { once: true }
+    );
 
-    speak("Click anywhere to activate voice control, sir.", true);
+    speak("Click to activate voice control, sir.", true);
 }
 
 
 function startVoiceOnce() {
+
     try {
+
         recog.start();
+
         isListening = true;
 
-        console.log("🎤 Voice started");
+        console.log("🎤 Mic started");
 
     } catch (e) {
-        console.error("Mic start failed:", e);
+
+        console.error("Mic error:", e);
     }
 }
 
-document.getElementById("openGestureBtn").onclick = () => {
-    window.open("gesture.html", "_blank");
-};
-/* ---------- HANDLE VOICE ---------- */
 
 recog.onresult = async (event) => {
 
-    const result = event.results[0][0].transcript.trim();
+    const result =
+        event.results[0][0].transcript.trim();
 
-    console.log("🎧 Heard:", result);
+    console.log("Heard:", result);
 
     if (!result) return;
 
@@ -111,37 +398,36 @@ recog.onresult = async (event) => {
 
     const lower = result.toLowerCase();
 
-
-    // Wake word
     if (lower.startsWith("jarvis")) {
 
-        const command = result.replace(/jarvis/i, "").trim();
+        const cmd =
+            result.replace(/jarvis/i, "").trim();
 
-        if (!command) {
+        if (!cmd) {
+
             await speak("Yes sir?", true);
             return;
         }
 
-        await send(command);
+        await send(cmd);
 
     } else {
-        // Optional: respond even without wake word
+
         await send(result);
     }
 };
 
 
-/* ---------- AUTO RESTART ---------- */
-
 recog.onend = () => {
 
-    console.log("🔁 Voice ended");
-
     if (window.isUnlocked) {
+
         setTimeout(() => {
+
             try {
                 recog.start();
             } catch {}
+
         }, 500);
     }
 };
@@ -149,20 +435,22 @@ recog.onend = () => {
 
 recog.onerror = (e) => {
 
-    console.warn("🎤 Mic error:", e.error);
+    console.warn("Mic error:", e.error);
 
     if (window.isUnlocked) {
+
         setTimeout(() => {
+
             try {
                 recog.start();
             } catch {}
+
         }, 1000);
     }
 };
 
 
-
-/* ================== BACKEND COMM ================== */
+/* ================== BACKEND ================== */
 
 sendBtn.onclick = () => send();
 
@@ -173,7 +461,8 @@ msgInput.addEventListener("keydown", e => {
 
 async function send(textOverride) {
 
-    const text = textOverride || msgInput.value.trim();
+    const text =
+        textOverride || msgInput.value.trim();
 
     if (!text) return;
 
@@ -183,7 +472,8 @@ async function send(textOverride) {
 
     try {
 
-        const localTime = new Date().toLocaleString();
+        const localTime =
+            new Date().toLocaleString();
 
         const r = await fetch(`${BACKEND_URL}/api/ask`, {
             method: "POST",
@@ -197,15 +487,13 @@ async function send(textOverride) {
         const data = await r.json();
 
         if (!data || !data.reply) {
-            throw new Error("Invalid AI response");
+            throw new Error("Invalid AI reply");
         }
 
         addMessage(data.reply, "bot");
 
         await speak(data.reply, true);
 
-
-        // Actions
         if (data.action === "open" && data.target) {
             window.open(data.target, "_blank");
         }
@@ -227,7 +515,6 @@ async function send(textOverride) {
         speak("Network problem, sir.", false);
     }
 }
-
 
 
 /* ================== EXPORT ================== */
